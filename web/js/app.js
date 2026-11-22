@@ -618,10 +618,26 @@
     el.btnStyleDonut.addEventListener('click', () => { state.chartStyle = 'donut'; savePrefs(); syncStyleButtons(); recomputeAndRender(); });
     el.btnStylePie.addEventListener('click', () => { state.chartStyle = 'pie'; savePrefs(); syncStyleButtons(); recomputeAndRender(); });
 
+    el.inApi.addEventListener('input', () => {
+      const m = /#connect\?(.*)$/.exec(el.inApi.value.trim());
+      if (!m) return;
+      const p = new URLSearchParams(m[1]);
+      if (p.get('api') && p.get('token')) {
+        el.inApi.value = p.get('api');
+        el.inToken.value = p.get('token');
+      }
+    });
+
     el.btnSaveConfig.addEventListener('click', () => {
-      const api = el.inApi.value.trim();
-      const token = el.inToken.value.trim();
-      if (!api || !token) { alert('Podaj adres API i token.'); return; }
+      let api = el.inApi.value.trim();
+      let token = el.inToken.value.trim();
+      const m = /#connect\?(.*)$/.exec(api);
+      if (m) {
+        const p = new URLSearchParams(m[1]);
+        if (p.get('api')) api = p.get('api').trim();
+        if (p.get('token')) token = p.get('token').trim();
+      }
+      if (!api || !token) { alert('Podaj adres API i token (albo wklej cały link z Arkusza).'); return; }
       MM.api.saveConfig(api, token);
       state.payload = null;
       el.dlgSettings.close();
