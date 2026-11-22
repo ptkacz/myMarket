@@ -2,7 +2,7 @@
 (function (MM) {
   'use strict';
 
-  const APP_VERSION = '1.0.0';
+  const APP_VERSION = '1.0.2';
   const KEY_PREFS = 'mm.prefs';
   const AUTO_REFRESH_MS = 60_000;
 
@@ -618,25 +618,31 @@
     el.btnStyleDonut.addEventListener('click', () => { state.chartStyle = 'donut'; savePrefs(); syncStyleButtons(); recomputeAndRender(); });
     el.btnStylePie.addEventListener('click', () => { state.chartStyle = 'pie'; savePrefs(); syncStyleButtons(); recomputeAndRender(); });
 
-    el.inApi.addEventListener('input', () => {
-      const m = /#connect\?(.*)$/.exec(el.inApi.value.trim());
-      if (!m) return;
-      const p = new URLSearchParams(m[1]);
-      if (p.get('api') && p.get('token')) {
-        el.inApi.value = p.get('api');
-        el.inToken.value = p.get('token');
+    function parseConnectInput(raw) {
+      const s = String(raw || '').trim();
+      const idx = s.indexOf('?');
+      if (idx === -1) return null;
+      const p = new URLSearchParams(s.slice(idx + 1));
+      const api = p.get('api');
+      const token = p.get('token');
+      return api && token ? { api: api.trim(), token: token.trim() } : null;
+    }
+
+    function trySplitConnectInput() {
+      const parsed = parseConnectInput(el.inApi.value);
+      if (parsed) {
+        el.inApi.value = parsed.api;
+        el.inToken.value = parsed.token;
       }
-    });
+    }
+
+    el.inApi.addEventListener('input', trySplitConnectInput);
+    el.inApi.addEventListener('paste', () => setTimeout(trySplitConnectInput, 0));
 
     el.btnSaveConfig.addEventListener('click', () => {
-      let api = el.inApi.value.trim();
-      let token = el.inToken.value.trim();
-      const m = /#connect\?(.*)$/.exec(api);
-      if (m) {
-        const p = new URLSearchParams(m[1]);
-        if (p.get('api')) api = p.get('api').trim();
-        if (p.get('token')) token = p.get('token').trim();
-      }
+      trySplitConnectInput();
+      const api = el.inApi.value.trim();
+      const token = el.inToken.value.trim();
       if (!api || !token) { alert('Podaj adres API i token (albo wklej cały link z Arkusza).'); return; }
       MM.api.saveConfig(api, token);
       state.payload = null;
