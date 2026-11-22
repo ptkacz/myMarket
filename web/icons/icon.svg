@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0F172A"/>
+  <g transform="translate(256,256)" fill="none" stroke-width="64" stroke-linecap="butt">
+    <!-- Segmenty pierścienia (r=132, obwód ~829.38) -->
+    <circle r="132" stroke="#2563EB" stroke-dasharray="320 830" stroke-dashoffset="0" transform="rotate(-90)"/>
+    <circle r="132" stroke="#10B981" stroke-dasharray="225 830" stroke-dashoffset="-336" transform="rotate(-90)"/>
+    <circle r="132" stroke="#F97316" stroke-dasharray="145 830" stroke-dashoffset="-577" transform="rotate(-90)"/>
+    <circle r="132" stroke="#E11D48" stroke-dasharray="90 830" stroke-dashoffset="-738" transform="rotate(-90)"/>
+  </g>
+</svg>

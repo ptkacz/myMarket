@@ -1,0 +1,101 @@
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.safe-area {
+  padding-top: max(1.25rem, env(safe-area-inset-top));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+/* Wykres */
+.pie-slice {
+  transition: transform .28s cubic-bezier(.22, 1, .36, 1), opacity .22s ease;
+  cursor: pointer;
+  transform-box: fill-box;
+  transform-origin: center;
+  outline: none;
+}
+.pie-label {
+  pointer-events: none;
+  user-select: none;
+  transition: transform .28s cubic-bezier(.22, 1, .36, 1), opacity .22s ease;
+}
+@media (hover: none) {
+  #floating-tooltip { display: none !important; }
+}
+
+/* Przyciski */
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .35rem;
+  min-width: 2.25rem; height: 2.25rem; padding: 0 .55rem;
+  border-radius: .75rem; border: 1px solid rgb(226 232 240);
+  background: #fff; color: rgb(71 85 105);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+  transition: background .15s, color .15s;
+}
+.icon-btn:hover { background: rgb(248 250 252); color: rgb(15 23 42); }
+.icon-btn:disabled { opacity: .6; }
+
+.seg-btn {
+  padding: .45rem .9rem; border-radius: .55rem;
+  font-size: .8125rem; font-weight: 600; color: rgb(71 85 105);
+  transition: all .15s;
+}
+.seg-btn:hover { color: rgb(15 23 42); }
+.seg-btn[aria-selected="true"] { background: #fff; color: rgb(15 23 42); box-shadow: 0 1px 2px rgba(15, 23, 42, .08); }
+
+.chip {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .4rem .75rem; border-radius: 9999px;
+  border: 1px solid rgb(226 232 240); background: #fff;
+  font-size: .75rem; font-weight: 600; color: rgb(71 85 105);
+  transition: all .15s; user-select: none;
+}
+.chip-dot { width: .5rem; height: .5rem; border-radius: 9999px; background: rgb(203 213 225); transition: background .15s; }
+.chip[aria-pressed="true"] { background: rgb(15 23 42); border-color: rgb(15 23 42); color: #fff; }
+.chip[aria-pressed="true"] .chip-dot { background: rgb(52 211 153); }
+
+.btn-primary {
+  padding: .55rem 1rem; border-radius: .75rem; background: rgb(15 23 42); color: #fff;
+  font-size: .8125rem; font-weight: 600;
+}
+.btn-primary:hover { background: rgb(30 41 59); }
+.btn-secondary {
+  padding: .55rem 1rem; border-radius: .75rem; background: #fff; color: rgb(51 65 85);
+  border: 1px solid rgb(226 232 240); font-size: .8125rem; font-weight: 600;
+}
+.btn-secondary:hover { background: rgb(248 250 252); }
+
+.field {
+  margin-top: .25rem; width: 100%; padding: .55rem .75rem; border-radius: .75rem;
+  border: 1px solid rgb(226 232 240); font-size: 16px; /* 16px = brak auto-zoomu w iOS */
+  background: #fff;
+}
+.field:focus { outline: none; border-color: rgb(37 99 235); box-shadow: 0 0 0 3px rgba(37, 99, 235, .15); }
+
+/* Dialogi */
+.dlg {
+  width: min(560px, calc(100vw - 1.5rem));
+  max-height: calc(100dvh - 2rem);
+  border-radius: 1.5rem; border: 1px solid rgb(226 232 240);
+  padding: 0; color: rgb(15 23 42);
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, .25);
+}
+.dlg::backdrop { background: rgba(15, 23, 42, .35); backdrop-filter: blur(3px); }
+
+/* Wiersz legendy — rozwinięte szczegóły */
+.legend-row[data-active="true"] {
+  box-shadow: 0 0 0 2px rgb(15 23 42);
+  background: rgb(248 250 252);
+}
+.legend-row[data-dim="true"] { opacity: .6; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinning { animation: spin .9s linear infinite; }
+
+@keyframes shimmer { 0% { opacity: .55; } 50% { opacity: 1; } 100% { opacity: .55; } }
+.skeleton { animation: shimmer 1.4s ease-in-out infinite; background: rgb(241 245 249); border-radius: 1rem; }

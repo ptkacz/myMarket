@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>myMarket — portfel</title>
+  <meta name="theme-color" content="#F8FAFC" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="myMarket" />
+  <meta name="referrer" content="no-referrer" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen antialiased selection:bg-blue-100 selection:text-blue-900">
+
+  <div class="safe-area max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
+
+    <!-- Nagłówek -->
+    <header class="flex items-start justify-between gap-3 mb-4 sm:mb-6">
+      <div class="min-w-0">
+        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-[11px] font-semibold tracking-wide uppercase mb-2 max-w-full">
+          <span class="w-2 h-2 rounded-full bg-blue-600 shrink-0"></span>
+          <span id="portfolio-name" class="truncate">myMarket</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Struktura portfela</h1>
+        <p id="status-line" class="text-xs sm:text-sm text-slate-500 mt-1 flex items-center gap-1.5 flex-wrap">Ładowanie…</p>
+      </div>
+      <div class="flex items-center gap-1.5 shrink-0 pt-1">
+        <button id="btn-ai" type="button" title="Kopiuj dla AI" class="icon-btn">
+          <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.8 3.5l1.2 3.3a2 2 0 001.2 1.2l3.3 1.2-3.3 1.2a2 2 0 00-1.2 1.2l-1.2 3.3-1.2-3.3a2 2 0 00-1.2-1.2L4.1 9.2l3.3-1.2a2 2 0 001.2-1.2l1.2-3.3zM17.5 13.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8z"/></svg>
+          <span class="hidden sm:inline text-xs font-semibold">AI</span>
+        </button>
+        <button id="btn-refresh" type="button" title="Odśwież kursy" class="icon-btn">
+          <svg id="refresh-icon" class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.6m14.8 2A8 8 0 004.6 9m0 0H9m11 11v-5h-.6m0 0a8 8 0 01-15.4-2m15.4 2H15"/></svg>
+        </button>
+        <button id="btn-settings" type="button" title="Ustawienia" class="icon-btn">
+          <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.3 4.3c.4-1.8 3-1.8 3.4 0a1.7 1.7 0 002.6 1.1c1.5-.9 3.3.8 2.4 2.4a1.7 1.7 0 001 2.5c1.8.5 1.8 3 0 3.5a1.7 1.7 0 00-1 2.5c.9 1.6-.9 3.3-2.4 2.4a1.7 1.7 0 00-2.6 1.1c-.4 1.8-3 1.8-3.4 0a1.7 1.7 0 00-2.6-1.1c-1.5.9-3.3-.8-2.4-2.4a1.7 1.7 0 00-1-2.5c-1.8-.5-1.8-3 0-3.5a1.7 1.7 0 001-2.5c-.9-1.6.9-3.3 2.4-2.4 1 .6 2.3.1 2.6-1.1z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Komunikaty (demo / błąd) -->
+    <div id="notice" class="hidden mb-4"></div>
+
+    <!-- Główna karta -->
+    <main class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+
+      <!-- Pasek przełączników -->
+      <div class="px-4 sm:px-7 py-3.5 border-b border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div role="tablist" aria-label="Tryb grupowania" class="inline-flex bg-slate-200/70 p-1 rounded-xl self-start">
+          <button id="tab-stocks" role="tab" type="button" class="seg-btn">Wg spółek</button>
+          <button id="tab-categories" role="tab" type="button" class="seg-btn">Wg kategorii</button>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button id="chip-cash" type="button" class="chip" aria-pressed="false"><span class="chip-dot"></span>Gotówka</button>
+          <button id="chip-crypto" type="button" class="chip hidden" aria-pressed="true"><span class="chip-dot"></span>Krypto</button>
+          <button id="chip-prepost" type="button" class="chip hidden" aria-pressed="false"><span class="chip-dot"></span>Pre/Post</button>
+        </div>
+      </div>
+
+      <!-- Wykres + lista -->
+      <div class="p-4 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+
+        <div class="lg:col-span-6 flex flex-col items-center lg:sticky lg:top-6">
+          <div class="relative w-full max-w-[380px] aspect-square flex items-center justify-center">
+            <svg id="portfolio-svg" viewBox="0 0 420 420" class="w-full h-full overflow-visible" role="img" aria-label="Wykres struktury portfela">
+              <defs>
+                <filter id="slice-shadow" x="-15%" y="-15%" width="130%" height="130%">
+                  <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.16" />
+                </filter>
+              </defs>
+              <g id="svg-slices"></g>
+              <g id="svg-labels"></g>
+            </svg>
+            <div id="donut-center" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-[22%] text-center transition-opacity duration-200">
+              <span id="center-eyebrow" class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"></span>
+              <span id="center-primary" class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight mt-0.5 tabular-nums leading-tight"></span>
+              <span id="center-secondary" class="text-xs font-semibold mt-1 tabular-nums"></span>
+              <span id="center-tertiary" class="text-[11px] font-medium mt-0.5 tabular-nums"></span>
+            </div>
+          </div>
+
+          <div id="detail-banner" class="w-full mt-4 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4 transition-all">
+            <div id="detail-content" class="text-center text-xs text-slate-500"></div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-6 flex flex-col">
+          <div class="flex items-center justify-between mb-3 px-1 gap-2">
+            <h2 id="legend-heading" class="text-sm font-bold uppercase tracking-wider text-slate-500"></h2>
+            <label class="flex items-center gap-1 text-xs text-slate-400">
+              <span class="sr-only sm:not-sr-only">Sortuj:</span>
+              <select id="sort-select" class="bg-transparent text-xs font-semibold text-slate-600 focus:outline-none cursor-pointer">
+                <option value="value">wartość</option>
+                <option value="pnlPct">wynik %</option>
+                <option value="dailyPct">zmiana dzienna</option>
+                <option value="name">A–Z</option>
+              </select>
+            </label>
+          </div>
+
+          <div id="legend-list" class="space-y-2"></div>
+
+          <div id="warnings" class="hidden mt-4"></div>
+
+          <div class="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 px-1">
+            <span id="footer-note">Dotknij pozycji, aby zobaczyć szczegóły.</span>
+            <span id="footer-total" class="font-semibold text-slate-600 tabular-nums"></span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <p class="text-center text-[11px] text-slate-400 mt-6">myMarket v<span id="app-version"></span> · dane z Twojego Arkusza Google · kursy: Yahoo Finance / Google Finance</p>
+  </div>
+
+  <!-- Tooltip (tylko urządzenia ze wskaźnikiem) -->
+  <div id="floating-tooltip" class="fixed z-50 pointer-events-none opacity-0 transition-opacity duration-150 bg-slate-900/95 backdrop-blur-md text-white rounded-2xl shadow-xl border border-slate-700/80 p-4 w-72 text-sm" style="left:0;top:0"></div>
+
+  <!-- Ustawienia -->
+  <dialog id="dlg-settings" class="dlg">
+    <form method="dialog" class="p-5 sm:p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold">Ustawienia</h3>
+        <button value="cancel" class="icon-btn" aria-label="Zamknij">✕</button>
+      </div>
+      <div class="space-y-3">
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Połączenie z arkuszem</div>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-600">Adres API (URL Web App, kończy się na /exec)</span>
+          <input id="in-api" type="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec" class="field" />
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-600">Token</span>
+          <input id="in-token" type="password" autocomplete="off" class="field" />
+        </label>
+        <p class="text-[11px] text-slate-400">Najprościej: w arkuszu menu <b>myMarket → Połącz z aplikacją</b> i zeskanuj kod QR.</p>
+      </div>
+      <div class="space-y-2">
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Wygląd</div>
+        <div class="inline-flex bg-slate-100 p-1 rounded-xl">
+          <button id="btn-style-donut" type="button" class="seg-btn">Pierścieniowy</button>
+          <button id="btn-style-pie" type="button" class="seg-btn">Pełne koło</button>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+        <button id="btn-save-config" type="button" class="btn-primary">Zapisz i połącz</button>
+        <button id="btn-demo" type="button" class="btn-secondary">Tryb demo</button>
+        <button id="btn-disconnect" type="button" class="btn-secondary text-rose-600">Rozłącz</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Eksport dla AI -->
+  <dialog id="dlg-ai" class="dlg">
+    <div class="p-5 sm:p-6 space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold">Portfel dla AI</h3>
+        <button id="btn-ai-close" type="button" class="icon-btn" aria-label="Zamknij">✕</button>
+      </div>
+      <p class="text-xs text-slate-500">Skopiuj i wklej do Gemini / ChatGPT / Claude, aby skonsultować kolejne decyzje.</p>
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="inline-flex bg-slate-100 p-1 rounded-xl">
+          <button id="ai-fmt-md" type="button" class="seg-btn">Tekst</button>
+          <button id="ai-fmt-json" type="button" class="seg-btn">JSON</button>
+        </div>
+        <button id="ai-hide" type="button" class="chip" aria-pressed="false"><span class="chip-dot"></span>Ukryj kwoty</button>
+        <button id="ai-prompt" type="button" class="chip" aria-pressed="true"><span class="chip-dot"></span>Dodaj prośbę</button>
+      </div>
+      <textarea id="ai-text" readonly class="w-full h-64 text-[11px] leading-snug font-mono bg-slate-50 border border-slate-200 rounded-xl p-3 focus:outline-none"></textarea>
+      <div class="flex flex-wrap gap-2">
+        <button id="btn-ai-copy" type="button" class="btn-primary">Kopiuj</button>
+        <button id="btn-ai-share" type="button" class="btn-secondary hidden">Udostępnij…</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="js/format.js"></script>
+  <script src="js/demo.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/ai-export.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
