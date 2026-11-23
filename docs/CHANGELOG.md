@@ -1,5 +1,8 @@
 # Changelog — myMarket
 
+## [1.2.1] — 2026-11-23
+- Poprawka układu w środku wykresu pierścieniowego w trybie `All / Wszystkie`: rozbicie `Open` i `Closed` ułożone jedna pod drugą z kolorowaniem kwot, dzięki czemu bez problemu mieści się w kole również dla dużych wartości.
+
 ## [1.2.0] — 2026-11-23
 - **Dwujęzyczność EN / PL (domyślnie angielski):**
   - Nowy moduł [web/js/i18n.js](../web/js/i18n.js) oraz przełącznik języka `English | Polski` w Ustawieniach.

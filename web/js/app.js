@@ -2,7 +2,7 @@
 (function (MM) {
   'use strict';
 
-  const APP_VERSION = '1.2.0';
+  const APP_VERSION = '1.2.1';
   const KEY_PREFS = 'mm.prefs';
   const AUTO_REFRESH_MS = 60_000;
 
@@ -596,8 +596,10 @@
             el.centerSecondary.textContent = '';
           }
           if (s.closedCount > 0) {
-            el.centerTertiary.textContent = `${T('openShort')} ${f.signedMoney(s.pnl, cur, 0)} · ${T('closedShort')} ${f.signedMoney(s.closedPnl, cur, 0)}`;
-            el.centerTertiary.className = 'text-[11px] font-medium text-slate-500 mt-0.5 tabular-nums leading-snug';
+            el.centerTertiary.innerHTML =
+              `<span class="block">${f.esc(T('openShort'))} <strong class="font-semibold ${f.gainClass(s.pnl)}">${f.signedMoney(s.pnl, cur, 0)}</strong></span>` +
+              `<span class="block">${f.esc(T('closedShort'))} <strong class="font-semibold ${f.gainClass(s.closedPnl)}">${f.signedMoney(s.closedPnl, cur, 0)}</strong></span>`;
+            el.centerTertiary.className = 'text-[10.5px] sm:text-[11px] font-medium text-slate-400 mt-1 tabular-nums leading-tight space-y-0.5';
           } else if (s.daily !== null) {
             el.centerTertiary.textContent = `${T('todayPrefix')} ${f.signedMoney(s.daily, cur)} (${f.signedPct(s.dailyPct)})`;
             el.centerTertiary.className = `text-[11px] font-medium mt-0.5 tabular-nums ${f.gainClass(s.daily)}`;
