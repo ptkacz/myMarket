@@ -10,7 +10,7 @@
  */
 
 const API_VERSION = 1;
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.3.1';
 
 const SHEETS = {
   START: 'Start',
@@ -487,7 +487,7 @@ function gfSymbol_(s) {
 }
 
 // ===========================================================================
-// 3b. NAJBLIŻSZE WYNIKI FINANSOWE (Yahoo quote + fallback Nasdaq, cache 6h)
+// 3b. NAJBLIŻSZE WYNIKI FINANSOWE (Yahoo quote, cache 6h)
 // ===========================================================================
 
 function getEarnings_(symbols, fresh) {
@@ -513,11 +513,6 @@ function getEarnings_(symbols, fresh) {
 
     if (missing.length) {
       const fetched = fetchYahooEarnings_(missing);
-      const still = missing.filter(function (s) { return !fetched[s]; });
-      if (still.length) {
-        const ndq = fetchNasdaqEarnings_(still);
-        still.forEach(function (s) { if (ndq[s]) fetched[s] = ndq[s]; });
-      }
       const toCache = {};
       missing.forEach(function (s) {
         const item = fetched[s] || null;
@@ -592,45 +587,6 @@ function fetchYahooEarnings_(symbols) {
       estimate: !!q.isEarningsDateEstimate,
       source: 'yahoo'
     };
-  });
-  return out;
-}
-
-function fetchNasdaqEarnings_(symbols) {
-  const out = {};
-  const reqs = symbols.map(function (s) {
-    return {
-      url: 'https://api.nasdaq.com/api/analyst/' + encodeURIComponent(s) + '/earnings-date',
-      muteHttpExceptions: true,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Origin': 'https://www.nasdaq.com',
-        'Referer': 'https://www.nasdaq.com/'
-      }
-    };
-  });
-  let responses;
-  try { responses = UrlFetchApp.fetchAll(reqs); } catch (e) { return out; }
-  const months = { Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06', Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12' };
-  const today = Utilities.formatDate(new Date(), 'America/New_York', 'yyyy-MM-dd');
-
-  responses.forEach(function (res, i) {
-    try {
-      if (res.getResponseCode() !== 200) return;
-      const data = JSON.parse(res.getContentText());
-      const ann = data && data.data && data.data.announcement;
-      if (!ann) return;
-      const m = /([A-Z][a-z]{2})\s+(\d{1,2}),\s*(\d{4})/.exec(ann);
-      if (!m || !months[m[1]]) return;
-      const iso = m[3] + '-' + months[m[1]] + '-' + ('0' + m[2]).slice(-2);
-      if (iso < today) return;
-      out[symbols[i]] = {
-        date: iso,
-        estimate: ann.indexOf('*') !== -1,
-        source: 'nasdaq'
-      };
-    } catch (e) { /* pomijamy pojedynczy symbol */ }
   });
   return out;
 }

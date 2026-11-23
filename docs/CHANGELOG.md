@@ -1,5 +1,9 @@
 # Changelog — myMarket
 
+## [1.3.1] — 2026-11-23
+- Usunięto fallback na `api.nasdaq.com` w [apps-script/Code.gs](../apps-script/Code.gs) (serwery Nasdaq zawieszały połączenia z Google Apps Script) — daty wyników pobierane są teraz wyłącznie szybko przez Yahoo Finance.
+- Dodano 25-sekundowy timeout w [web/js/api.js](../web/js/api.js), dzięki czemu ikona odświeżania nigdy nie zawiesza się w nieskończoność.
+
 ## [1.3.0] — 2026-11-23
 - **Najbliższe wyniki finansowe (Earnings):**
   - Backend ([apps-script/Code.gs](../apps-script/Code.gs)): zbiorcze pobieranie nadchodzących dat wyników dla otwartych akcji (Yahoo Finance `v7/finance/quote` z sesyjnym cookie/crumb + fallback Nasdaq, cache 6h) oraz podgląd w menu `myMarket → Testuj kursy`.

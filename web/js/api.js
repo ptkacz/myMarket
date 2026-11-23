@@ -50,11 +50,23 @@
     if (fresh) url.searchParams.set('fresh', '1');
     url.searchParams.set('_', Date.now().toString());
 
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), 25000) : null;
     let res;
     try {
-      res = await fetch(url.toString(), { method: 'GET', redirect: 'follow', cache: 'no-store' });
+      res = await fetch(url.toString(), {
+        method: 'GET',
+        redirect: 'follow',
+        cache: 'no-store',
+        signal: controller ? controller.signal : undefined
+      });
     } catch (e) {
+      if (e && e.name === 'AbortError') {
+        throw new Error('Przekroczono czas odpowiedzi API (25 s). Spróbuj ponownie.');
+      }
       throw new Error('Brak połączenia z API. Sprawdź internet lub adres Web App.');
+    } finally {
+      if (timer) clearTimeout(timer);
     }
     if (!res.ok) throw new Error(`API zwróciło błąd HTTP ${res.status}.`);
 

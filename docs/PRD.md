@@ -76,7 +76,7 @@ flowchart LR
 - **Fallback:** automatyczna ukryta zakładka `_Kursy` z formułami `GOOGLEFINANCE()` (sesja regularna, opóźnienie do ~20 min).
 - **Cache** w `CacheService`: 60 s w godzinach notowań, 15 min gdy rynek zamknięty.
 - **Domyślne zachowanie pre/post:** wyłączone w obliczeniach na wykresie; kurs pre/post widoczny jako dodatkowa informacja w szczegółach, a przełącznik **Pre/Post** przełącza wycenę na rozszerzoną sesję.
-- **Najbliższe wyniki finansowe (earnings):** pobierane zbiorczo dla otwartych akcji przez Yahoo Finance (`v7/finance/quote` z sesyjnym cookie/crumb), z awaryjnym fallbackiem na publiczne API Nasdaq (`api.nasdaq.com/api/analyst/{SYMBOL}/earnings-date`); osobny cache 6h w `CacheService` (maks. TTL Apps Script). Gdy brak danych — pole po prostu się nie wyświetla i nigdy nie blokuje kursów.
+- **Najbliższe wyniki finansowe (earnings):** pobierane zbiorczo dla otwartych akcji przez Yahoo Finance (`v7/finance/quote` z sesyjnym cookie/crumb); osobny cache 6h w `CacheService` (maks. TTL Apps Script). Gdy brak danych — pole po prostu się nie wyświetla i nigdy nie blokuje kursów.
 
 ---
 
