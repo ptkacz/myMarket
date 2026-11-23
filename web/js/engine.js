@@ -1,10 +1,12 @@
 /* myMarket — silnik obliczeń portfela (czyste funkcje, bez DOM)
  *
- * compute(payload, opts) → pozycje, gotówka, sumy, ostrzeżenia
- * view(result, state)    → elementy wykresu/legendy wg aktualnych przełączników
+ * compute(payload, opts) → pozycje otwarte, zamknięte, gotówka, sumy, ostrzeżenia
+ * view(result, state)    → elementy wykresu/listy wg aktualnych przełączników
  *
  * Metoda kosztu (v1): średnia ważona. Prowizja kupna zwiększa koszt,
  * prowizja sprzedaży zmniejsza wynik zrealizowany.
+ * Otwarte pozycje z częściową sprzedażą uwzględniają w wyniku łącznym (pnl)
+ * także wynik zrealizowany na tym tickerze (procent liczony od całego kosztu zakupów).
  */
 (function (MM) {
   'use strict';
@@ -36,7 +38,14 @@
     txs.forEach(t => {
       let p = map.get(t.ticker);
       if (!p) {
-        p = { ticker: t.ticker, txAssetClass: t.assetClass, qty: 0, cost: 0, realized: 0, fees: 0, buys: 0, sells: 0, firstDate: t.tradeDate, lastDate: t.tradeDate };
+        p = {
+          ticker: t.ticker, txAssetClass: t.assetClass,
+          qty: 0, cost: 0, realized: 0, fees: 0,
+          totalBoughtQty: 0, totalBoughtCost: 0,
+          totalSoldQty: 0, totalSoldProceeds: 0,
+          buys: 0, sells: 0,
+          firstDate: t.tradeDate, lastDate: t.tradeDate
+        };
         map.set(t.ticker, p);
       }
       p.lastDate = t.tradeDate || p.lastDate;
@@ -44,12 +53,15 @@
 
       if (t.currency && t.currency !== base && !currencyWarned.has(t.ticker)) {
         currencyWarned.add(t.ticker);
-        warnings.push({ level: 'warn', where: `${t.source} — ${t.ticker}`, message: `Waluta ${t.currency} ≠ ${base}. Wersja 1.0 liczy wszystko w ${base} — wynik może być niepoprawny.` });
+        warnings.push({ level: 'warn', where: `${t.source} — ${t.ticker}`, message: `Waluta ${t.currency} ≠ ${base}. Wersja 1 liczy wszystko w ${base} — wynik może być niepoprawny.` });
       }
 
       if (t.type === 'BUY') {
+        const buyCost = t.quantity * t.price + (t.fee || 0);
         p.qty += t.quantity;
-        p.cost += t.quantity * t.price + (t.fee || 0);
+        p.cost += buyCost;
+        p.totalBoughtQty += t.quantity;
+        p.totalBoughtCost += buyCost;
         p.buys++;
       } else {
         let q = t.quantity;
@@ -59,8 +71,11 @@
         }
         if (p.qty > EPS && q > 0) {
           const avg = p.cost / p.qty;
-          const r = q * t.price - (t.fee || 0) - avg * q;
+          const proceeds = q * t.price - (t.fee || 0);
+          const r = proceeds - avg * q;
           p.realized += r;
+          p.totalSoldQty += q;
+          p.totalSoldProceeds += proceeds;
           realizedTotal += r;
           p.cost -= avg * q;
           p.qty -= q;
@@ -70,7 +85,7 @@
       }
     });
 
-    // --- 2. Wycena otwartych pozycji ---
+    // --- 2. Wycena otwartych i budowa zamkniętych pozycji ---
     const quotes = payload.quotes || {};
     const positions = [];
     const closed = [];
@@ -86,15 +101,35 @@
 
     map.forEach(p => {
       const meta = instr[p.ticker];
+      const assetClass = meta ? meta.assetClass : (p.txAssetClass || 'STOCK');
+      const isCrypto = assetClass === 'CRYPTO';
+      const category = (meta && meta.category) || (isCrypto ? 'Kryptowaluty' : 'Bez kategorii');
+
       if (p.qty <= EPS) {
-        closed.push({ ticker: p.ticker, name: meta ? meta.name : p.ticker, realized: p.realized, fees: p.fees, lastDate: p.lastDate });
+        closed.push({
+          ticker: p.ticker,
+          name: meta ? meta.name : p.ticker,
+          category, assetClass, isCrypto,
+          color: (meta && meta.color) || null,
+          cost: p.totalBoughtCost,
+          proceeds: p.totalSoldProceeds,
+          pnl: p.realized,
+          realized: p.realized,
+          pnlPct: p.totalBoughtCost > 0 ? (p.realized / p.totalBoughtCost) * 100 : null,
+          totalBoughtQty: p.totalBoughtQty,
+          totalSoldQty: p.totalSoldQty,
+          avgBuyPrice: p.totalBoughtQty > 0 ? p.totalBoughtCost / p.totalBoughtQty : null,
+          avgSellPrice: p.totalSoldQty > 0 ? p.totalSoldProceeds / p.totalSoldQty : null,
+          buys: p.buys, sells: p.sells,
+          fees: p.fees,
+          firstDate: p.firstDate, lastDate: p.lastDate
+        });
         return;
       }
+
       if (!meta) {
         warnings.push({ level: 'info', where: 'Instrumenty', message: `Brak ${p.ticker} w zakładce „Instrumenty” — użyto domyślnej nazwy i kategorii.` });
       }
-      const assetClass = meta ? meta.assetClass : (p.txAssetClass || 'STOCK');
-      const isCrypto = assetClass === 'CRYPTO';
       const symbol = (meta && meta.symbol) || (isCrypto ? `${p.ticker}-USD` : p.ticker);
       const q = quotes[symbol] || null;
       const avgCost = p.cost / p.qty;
@@ -118,7 +153,13 @@
       }
 
       const value = p.qty * price;
-      const pnl = value - p.cost;
+      const unrealizedPnl = value - p.cost;
+      const unrealizedPct = p.cost > 0 ? (unrealizedPnl / p.cost) * 100 : null;
+      const hasPartialSales = p.sells > 0 && p.totalSoldQty > EPS;
+      const totalPnl = unrealizedPnl + p.realized;
+      const totalCost = p.totalBoughtCost > 0 ? p.totalBoughtCost : p.cost;
+      const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : null;
+
       const prevClose = q && MM.fmt.isNum(q.previousClose) ? q.previousClose : null;
       const daily = prevClose !== null && priceSource !== 'none' ? p.qty * (price - prevClose) : null;
       const dailyPct = prevClose ? (price / prevClose - 1) * 100 : null;
@@ -126,28 +167,36 @@
       positions.push({
         ticker: p.ticker,
         name: meta ? meta.name : p.ticker,
-        category: (meta && meta.category) || (isCrypto ? 'Kryptowaluty' : 'Bez kategorii'),
-        assetClass, isCrypto, symbol,
+        category, assetClass, isCrypto, symbol,
         color: (meta && meta.color) || null,
         quantity: p.qty,
         avgCost,
         cost: p.cost,
+        totalCost,
         price, priceSource, priceTime,
         regularPrice: q ? q.regular : null,
         previousClose: prevClose,
         extended: ext,
         marketState: q ? q.marketState : null,
-        value, pnl,
-        pnlPct: p.cost > 0 ? (pnl / p.cost) * 100 : null,
-        daily, dailyPct,
+        value,
+        unrealizedPnl, unrealizedPct,
         realized: p.realized,
+        hasPartialSales,
+        totalSoldQty: p.totalSoldQty,
+        totalSoldProceeds: p.totalSoldProceeds,
+        pnl: totalPnl,
+        pnlPct: totalPnlPct,
+        daily, dailyPct,
+        buys: p.buys, sells: p.sells,
         fees: p.fees,
-        firstDate: p.firstDate
+        firstDate: p.firstDate, lastDate: p.lastDate
       });
     });
 
     positions.sort((a, b) => b.value - a.value);
     positions.forEach(p => { if (!p.color) p.color = nextColor(); });
+    closed.sort((a, b) => String(b.lastDate || '').localeCompare(String(a.lastDate || '')) || b.pnl - a.pnl);
+    closed.forEach(c => { if (!c.color) c.color = nextColor(); });
 
     // --- 3. Gotówka ---
     const cashEntries = [];
@@ -165,6 +214,7 @@
     const sum = (arr, f) => arr.reduce((s, x) => s + (f(x) || 0), 0);
     const stocks = positions.filter(p => !p.isCrypto);
     const crypto = positions.filter(p => p.isCrypto);
+    const closedCrypto = closed.filter(c => c.isCrypto);
 
     // --- 5. Stan rynku / czas kursów ---
     const stockQuotes = stocks.map(p => quotes[p.symbol]).filter(Boolean);
@@ -184,10 +234,18 @@
         cryptoValue: sum(crypto, p => p.value),
         cashValue,
         investedCost: sum(positions, p => p.cost),
+        openTotalCost: sum(positions, p => p.totalCost),
+        openPnl: sum(positions, p => p.pnl),
+        openUnrealizedPnl: sum(positions, p => p.unrealizedPnl),
+        openPartialRealized: sum(positions, p => p.realized),
+        closedCost: sum(closed, c => c.cost),
+        closedProceeds: sum(closed, c => c.proceeds),
+        closedPnl: sum(closed, c => c.pnl),
         realized: realizedTotal
       },
-      hasCrypto: crypto.length > 0,
+      hasCrypto: crypto.length > 0 || closedCrypto.length > 0,
       hasStocks: stocks.length > 0,
+      hasClosed: closed.length > 0,
       anyExtended,
       market: { state: marketState, fetchedAt, source: allQuotes[0] ? allQuotes[0].source : null },
       warnings,
@@ -205,14 +263,29 @@
     return items.sort(by);
   }
 
-  function view(result, st) {
-    const pos = result.positions.filter(p => st.includeCrypto || !p.isCrypto);
-    let items;
+  function sortClosedItems(items, sort) {
+    const by = {
+      pnlPct: (a, b) => (b.pnlPct ?? -Infinity) - (a.pnlPct ?? -Infinity),
+      name: (a, b) => a.label.localeCompare(b.label, 'pl'),
+      value: (a, b) => (b.pnl - a.pnl) || (b.cost - a.cost),
+      dailyPct: (a, b) => (b.pnl - a.pnl) || (b.cost - a.cost)
+    }[sort] || ((a, b) => b.pnl - a.pnl);
+    return items.sort(by);
+  }
 
+  function view(result, st) {
+    const scope = st.scope || 'open'; // 'open' | 'all' | 'closed'
+    const pos = result.positions.filter(p => st.includeCrypto || !p.isCrypto);
+    const closedPos = result.closed.filter(c => st.includeCrypto || !c.isCrypto);
+
+    // --- Otwarte elementy (wykres + lista otwartych) ---
+    let items;
     if (st.mode === 'stocks') {
       items = pos.map(p => ({
         kind: 'position', id: p.ticker, label: p.ticker, subtitle: p.name, color: p.color,
-        value: p.value, cost: p.cost, pnl: p.pnl, pnlPct: p.pnlPct, daily: p.daily, dailyPct: p.dailyPct,
+        value: p.value, cost: p.cost, totalCost: p.totalCost,
+        unrealizedPnl: p.unrealizedPnl, realized: p.realized, hasPartialSales: p.hasPartialSales,
+        pnl: p.pnl, pnlPct: p.pnlPct, daily: p.daily, dailyPct: p.dailyPct,
         position: p
       }));
     } else {
@@ -220,18 +293,25 @@
       pos.forEach(p => {
         let g = groups.get(p.category);
         if (!g) {
-          g = { kind: 'category', id: 'CAT:' + p.category, label: p.category, color: result.catColors[p.category] || p.color,
-            value: 0, cost: 0, pnl: 0, daily: 0, hasDaily: false, positions: [] };
+          g = {
+            kind: 'category', id: 'CAT:' + p.category, label: p.category,
+            color: result.catColors[p.category] || p.color,
+            value: 0, cost: 0, totalCost: 0, unrealizedPnl: 0, realized: 0,
+            hasPartialSales: false, pnl: 0, daily: 0, hasDaily: false, positions: []
+          };
           groups.set(p.category, g);
         }
-        g.value += p.value; g.cost += p.cost; g.pnl += p.pnl;
+        g.value += p.value; g.cost += p.cost; g.totalCost += p.totalCost;
+        g.unrealizedPnl += p.unrealizedPnl; g.realized += p.realized;
+        if (p.hasPartialSales) g.hasPartialSales = true;
+        g.pnl += p.pnl;
         if (p.daily !== null) { g.daily += p.daily; g.hasDaily = true; }
         g.positions.push(p);
       });
       items = Array.from(groups.values()).map(g => ({
         ...g,
         subtitle: g.positions.map(p => p.ticker).join(', '),
-        pnlPct: g.cost > 0 ? (g.pnl / g.cost) * 100 : null,
+        pnlPct: g.totalCost > 0 ? (g.pnl / g.totalCost) * 100 : null,
         daily: g.hasDaily ? g.daily : null,
         dailyPct: g.hasDaily && g.value - g.daily > 0 ? (g.daily / (g.value - g.daily)) * 100 : null
       }));
@@ -243,7 +323,8 @@
       items.push({
         kind: 'cash', id: 'CASH', label: 'Gotówka', color: result.cash.color,
         subtitle: result.cash.entries.map(e => e.label).filter(Boolean).join(', ') || 'Wolne środki',
-        value: result.cash.value, cost: null, pnl: null, pnlPct: null, daily: null, dailyPct: null,
+        value: result.cash.value, cost: null, totalCost: null,
+        pnl: null, pnlPct: null, daily: null, dailyPct: null,
         entries: result.cash.entries
       });
     }
@@ -251,24 +332,90 @@
     const total = items.reduce((s, i) => s + i.value, 0);
     items.forEach(i => { i.sharePct = total > 0 ? (i.value / total) * 100 : 0; });
 
-    const invested = items.filter(i => i.kind !== 'cash');
-    const value = invested.reduce((s, i) => s + i.value, 0);
-    const cost = invested.reduce((s, i) => s + (i.cost || 0), 0);
-    const pnl = value - cost;
-    const dailyItems = invested.filter(i => i.daily !== null);
-    const daily = dailyItems.length ? dailyItems.reduce((s, i) => s + i.daily, 0) : null;
+    // --- Całkowicie zamknięte elementy ---
+    let closedItems;
+    if (st.mode === 'stocks') {
+      closedItems = closedPos.map(c => ({
+        kind: 'closed-position', id: 'CLOSED:' + c.ticker, label: c.ticker, subtitle: c.name, color: c.color,
+        value: null, sharePct: null,
+        cost: c.cost, proceeds: c.proceeds, pnl: c.pnl, pnlPct: c.pnlPct,
+        daily: null, dailyPct: null,
+        closed: c
+      }));
+    } else {
+      const cGroups = new Map();
+      closedPos.forEach(c => {
+        let g = cGroups.get(c.category);
+        if (!g) {
+          g = {
+            kind: 'closed-category', id: 'CLOSED_CAT:' + c.category, label: c.category,
+            color: result.catColors[c.category] || c.color,
+            value: null, sharePct: null,
+            cost: 0, proceeds: 0, pnl: 0, daily: null, dailyPct: null,
+            positions: []
+          };
+          cGroups.set(c.category, g);
+        }
+        g.cost += c.cost; g.proceeds += c.proceeds; g.pnl += c.pnl;
+        g.positions.push(c);
+      });
+      closedItems = Array.from(cGroups.values()).map(g => ({
+        ...g,
+        subtitle: g.positions.map(c => c.ticker).join(', '),
+        pnlPct: g.cost > 0 ? (g.pnl / g.cost) * 100 : null
+      }));
+    }
+    sortClosedItems(closedItems, st.sort);
+
+    // --- Podsumowania ---
+    const sum = (arr, f) => arr.reduce((s, x) => s + (f(x) || 0), 0);
+    const openValue = sum(pos, p => p.value);
+    const openCost = sum(pos, p => p.cost);
+    const openTotalCost = sum(pos, p => p.totalCost);
+    const openUnrealizedPnl = sum(pos, p => p.unrealizedPnl);
+    const openPartialRealized = sum(pos, p => p.realized);
+    const openPnl = openUnrealizedPnl + openPartialRealized;
+    const openPnlPct = openTotalCost > 0 ? (openPnl / openTotalCost) * 100 : null;
+
+    const closedCost = sum(closedPos, c => c.cost);
+    const closedProceeds = sum(closedPos, c => c.proceeds);
+    const closedPnl = sum(closedPos, c => c.pnl);
+    const closedPnlPct = closedCost > 0 ? (closedPnl / closedCost) * 100 : null;
+    const closedWins = closedPos.filter(c => c.pnl > 0.005).length;
+    const closedLosses = closedPos.filter(c => c.pnl < -0.005).length;
+
+    const allCost = openTotalCost + closedCost;
+    const allPnl = openPnl + closedPnl;
+    const allPnlPct = allCost > 0 ? (allPnl / allCost) * 100 : null;
+
+    const dailyItems = pos.filter(p => p.daily !== null);
+    const daily = dailyItems.length ? sum(dailyItems, p => p.daily) : null;
+    const dailyPct = daily !== null && openValue - daily > 0 ? (daily / (openValue - daily)) * 100 : null;
 
     let eyebrow = result.hasStocks ? 'Wartość akcji' : 'Wartość aktywów';
-    if (st.includeCrypto && result.hasCrypto && result.hasStocks) eyebrow = 'Akcje + krypto';
+    if (st.includeCrypto && pos.some(p => p.isCrypto) && pos.some(p => !p.isCrypto)) eyebrow = 'Akcje + krypto';
     if (st.includeCash && result.cash.value > 0) eyebrow = 'Cały portfel';
+    if (scope === 'all') eyebrow = st.includeCash && result.cash.value > 0 ? 'Cały portfel · łącznie' : 'Portfel · łącznie';
+
+    const selectableItems = scope === 'closed'
+      ? closedItems
+      : (scope === 'all' ? items.concat(closedItems) : items);
 
     return {
-      items, total, eyebrow,
+      scope, items, closedItems, selectableItems, total, eyebrow,
       summary: {
-        value, cost, pnl,
-        pnlPct: cost > 0 ? (pnl / cost) * 100 : null,
-        daily,
-        dailyPct: daily !== null && value - daily > 0 ? (daily / (value - daily)) * 100 : null
+        value: openValue,
+        cost: openCost,
+        openTotalCost,
+        openUnrealizedPnl,
+        openPartialRealized,
+        hasPartialSales: pos.some(p => p.hasPartialSales),
+        pnl: openPnl,
+        pnlPct: openPnlPct,
+        closedCost, closedProceeds, closedPnl, closedPnlPct,
+        closedCount: closedPos.length, closedWins, closedLosses,
+        allCost, allPnl, allPnlPct,
+        daily, dailyPct
       }
     };
   }

@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/app.css?v=1.0.3" />
+  <link rel="stylesheet" href="css/app.css?v=1.1.0" />
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen antialiased selection:bg-blue-100 selection:text-blue-900">
 
@@ -55,15 +55,24 @@
     <main class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
 
       <!-- Pasek przełączników -->
-      <div class="px-4 sm:px-7 py-3.5 border-b border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div role="tablist" aria-label="Tryb grupowania" class="inline-flex bg-slate-200/70 p-1 rounded-xl self-start">
-          <button id="tab-stocks" role="tab" type="button" class="seg-btn">Wg spółek</button>
-          <button id="tab-categories" role="tab" type="button" class="seg-btn">Wg kategorii</button>
-        </div>
-        <div class="flex items-center gap-2 flex-wrap">
-          <button id="chip-cash" type="button" class="chip" aria-pressed="false"><span class="chip-dot"></span>Gotówka</button>
-          <button id="chip-crypto" type="button" class="chip hidden" aria-pressed="true"><span class="chip-dot"></span>Krypto</button>
-          <button id="chip-prepost" type="button" class="chip hidden" aria-pressed="false"><span class="chip-dot"></span>Pre/Post</button>
+      <div class="px-4 sm:px-7 py-3.5 border-b border-slate-100 bg-slate-50/60 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2.5">
+          <div class="flex flex-wrap items-center gap-2">
+            <div role="tablist" aria-label="Tryb grupowania" class="inline-flex bg-slate-200/70 p-1 rounded-xl">
+              <button id="tab-stocks" role="tab" type="button" class="seg-btn">Wg spółek</button>
+              <button id="tab-categories" role="tab" type="button" class="seg-btn">Wg kategorii</button>
+            </div>
+            <div role="tablist" aria-label="Zakres pozycji" class="inline-flex bg-slate-200/70 p-1 rounded-xl">
+              <button id="scope-open" role="tab" type="button" class="seg-btn">Otwarte</button>
+              <button id="scope-all" role="tab" type="button" class="seg-btn">Wszystkie</button>
+              <button id="scope-closed" role="tab" type="button" class="seg-btn">Zamknięte</button>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button id="chip-cash" type="button" class="chip" aria-pressed="false"><span class="chip-dot"></span>Gotówka</button>
+            <button id="chip-crypto" type="button" class="chip hidden" aria-pressed="true"><span class="chip-dot"></span>Krypto</button>
+            <button id="chip-prepost" type="button" class="chip hidden" aria-pressed="false"><span class="chip-dot"></span>Pre/Post</button>
+          </div>
         </div>
       </div>
 
@@ -71,7 +80,7 @@
       <div class="p-4 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
 
         <div class="lg:col-span-6 flex flex-col items-center lg:sticky lg:top-6">
-          <div class="relative w-full max-w-[380px] aspect-square flex items-center justify-center">
+          <div id="chart-wrap" class="relative w-full max-w-[380px] aspect-square flex items-center justify-center">
             <svg id="portfolio-svg" viewBox="0 0 420 420" class="w-full h-full overflow-visible" role="img" aria-label="Wykres struktury portfela">
               <defs>
                 <filter id="slice-shadow" x="-15%" y="-15%" width="130%" height="130%">
@@ -81,13 +90,15 @@
               <g id="svg-slices"></g>
               <g id="svg-labels"></g>
             </svg>
-            <div id="donut-center" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-[22%] text-center transition-opacity duration-200">
+            <div id="donut-center" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-[20%] text-center transition-opacity duration-200">
               <span id="center-eyebrow" class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"></span>
               <span id="center-primary" class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight mt-0.5 tabular-nums leading-tight"></span>
               <span id="center-secondary" class="text-xs font-semibold mt-1 tabular-nums"></span>
-              <span id="center-tertiary" class="text-[11px] font-medium mt-0.5 tabular-nums"></span>
+              <span id="center-tertiary" class="text-[11px] font-medium mt-0.5 tabular-nums leading-snug"></span>
             </div>
           </div>
+
+          <div id="closed-summary" class="hidden w-full rounded-2xl border border-slate-200/90 bg-slate-50/70 p-5 text-center"></div>
 
           <div id="detail-banner" class="w-full mt-4 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4 transition-all">
             <div id="detail-content" class="text-center text-xs text-slate-500"></div>
@@ -109,6 +120,13 @@
           </div>
 
           <div id="legend-list" class="space-y-2"></div>
+
+          <div id="closed-section" class="hidden mt-6">
+            <div class="flex items-center justify-between mb-2.5 px-1">
+              <h3 id="closed-heading" class="text-xs font-bold uppercase tracking-wider text-slate-400"></h3>
+            </div>
+            <div id="closed-list" class="space-y-2"></div>
+          </div>
 
           <div id="warnings" class="hidden mt-4"></div>
 
@@ -184,12 +202,12 @@
     </div>
   </dialog>
 
-  <script src="js/format.js?v=1.0.3"></script>
-  <script src="js/demo.js?v=1.0.3"></script>
-  <script src="js/api.js?v=1.0.3"></script>
-  <script src="js/engine.js?v=1.0.3"></script>
-  <script src="js/chart.js?v=1.0.3"></script>
-  <script src="js/ai-export.js?v=1.0.3"></script>
-  <script src="js/app.js?v=1.0.3"></script>
+  <script src="js/format.js?v=1.1.0"></script>
+  <script src="js/demo.js?v=1.1.0"></script>
+  <script src="js/api.js?v=1.1.0"></script>
+  <script src="js/engine.js?v=1.1.0"></script>
+  <script src="js/chart.js?v=1.1.0"></script>
+  <script src="js/ai-export.js?v=1.1.0"></script>
+  <script src="js/app.js?v=1.1.0"></script>
 </body>
 </html>

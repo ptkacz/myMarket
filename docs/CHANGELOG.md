@@ -1,5 +1,12 @@
 # Changelog — myMarket
 
+## [1.1.0] — 2026-11-23
+- **Zakres pozycji: Otwarte / Wszystkie / Zamknięte (Krok 2):**
+  - W trybie **Otwarte** wynik otwartej pozycji uwzględnia również zrealizowany zysk/stratę z częściowych sprzedaży tego samego tickera (procent liczony od całego kosztu zakupów; w karcie szczegółów pod kołem pojawia się rozbicie `Otwarte / Zrealizowane`).
+  - W trybie **Wszystkie** środek wykresu pokazuje łączny wynik historyczny (otwarte + całkowicie zamknięte) z rozbiciem `Otw. / Zamk.`, a pod listą otwartych wyświetla się osobna sekcja zamkniętych pozycji.
+  - W trybie **Zamknięte** wyświetla się czysta karta podsumowania zrealizowanego wyniku (USD, %, zainwestowany kapitał, przychód, bilans zysk/strata) oraz lista całkowicie zamkniętych pozycji lub kategorii ze szczegółami po kliknięciu.
+  - Rozszerzony eksport **AI** o sekcję pozycji zamkniętych i rozbicie częściowych sprzedaży.
+
 ## [1.0.3] — 2026-11-23
 - **Ujednolicenie szczegółów pozycji (Krok 1):** szczegóły wybranej spółki lub kategorii pokazują się wyłącznie w karcie pod wykresem (w układzie z wartością, udziałem %, wynikiem % i zmianą dzienną); wiersz na liście tylko się podświetla, bez dublowania treści. Na mniejszych ekranach kliknięcie pozycji delikatnie przewija do karty szczegółów, jeśli jest poza widokiem.
 
