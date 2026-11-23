@@ -103,7 +103,8 @@
       const meta = instr[p.ticker];
       const assetClass = meta ? meta.assetClass : (p.txAssetClass || 'STOCK');
       const isCrypto = assetClass === 'CRYPTO';
-      const category = (meta && meta.category) || (isCrypto ? 'Kryptowaluty' : 'Bez kategorii');
+      const T = (k, v) => (MM.i18n ? MM.i18n.t(k, v) : k);
+      const category = (meta && meta.category) || (isCrypto ? T('cryptoCategory') : T('uncategorized'));
 
       if (p.qty <= EPS) {
         closed.push({
@@ -254,19 +255,21 @@
   }
 
   function sortItems(items, sort) {
+    const loc = (MM.i18n && MM.i18n.getLang()) || 'en';
     const by = {
       value: (a, b) => b.value - a.value,
       pnlPct: (a, b) => (b.pnlPct ?? -Infinity) - (a.pnlPct ?? -Infinity),
       dailyPct: (a, b) => (b.dailyPct ?? -Infinity) - (a.dailyPct ?? -Infinity),
-      name: (a, b) => a.label.localeCompare(b.label, 'pl')
+      name: (a, b) => a.label.localeCompare(b.label, loc)
     }[sort] || ((a, b) => b.value - a.value);
     return items.sort(by);
   }
 
   function sortClosedItems(items, sort) {
+    const loc = (MM.i18n && MM.i18n.getLang()) || 'en';
     const by = {
       pnlPct: (a, b) => (b.pnlPct ?? -Infinity) - (a.pnlPct ?? -Infinity),
-      name: (a, b) => a.label.localeCompare(b.label, 'pl'),
+      name: (a, b) => a.label.localeCompare(b.label, loc),
       value: (a, b) => (b.pnl - a.pnl) || (b.cost - a.cost),
       dailyPct: (a, b) => (b.pnl - a.pnl) || (b.cost - a.cost)
     }[sort] || ((a, b) => b.pnl - a.pnl);
@@ -319,10 +322,12 @@
 
     sortItems(items, st.sort);
 
+    const T = (k, v) => (MM.i18n ? MM.i18n.t(k, v) : k);
+
     if (st.includeCash && result.cash.value > 0) {
       items.push({
-        kind: 'cash', id: 'CASH', label: 'Gotówka', color: result.cash.color,
-        subtitle: result.cash.entries.map(e => e.label).filter(Boolean).join(', ') || 'Wolne środki',
+        kind: 'cash', id: 'CASH', label: T('cashLabel'), color: result.cash.color,
+        subtitle: result.cash.entries.map(e => e.label).filter(Boolean).join(', ') || T('cashDefaultSubtitle'),
         value: result.cash.value, cost: null, totalCost: null,
         pnl: null, pnlPct: null, daily: null, dailyPct: null,
         entries: result.cash.entries
@@ -392,10 +397,10 @@
     const daily = dailyItems.length ? sum(dailyItems, p => p.daily) : null;
     const dailyPct = daily !== null && openValue - daily > 0 ? (daily / (openValue - daily)) * 100 : null;
 
-    let eyebrow = result.hasStocks ? 'Wartość akcji' : 'Wartość aktywów';
-    if (st.includeCrypto && pos.some(p => p.isCrypto) && pos.some(p => !p.isCrypto)) eyebrow = 'Akcje + krypto';
-    if (st.includeCash && result.cash.value > 0) eyebrow = 'Cały portfel';
-    if (scope === 'all') eyebrow = st.includeCash && result.cash.value > 0 ? 'Cały portfel · łącznie' : 'Portfel · łącznie';
+    let eyebrow = result.hasStocks ? T('eyebrowStocks') : T('eyebrowAssets');
+    if (st.includeCrypto && pos.some(p => p.isCrypto) && pos.some(p => !p.isCrypto)) eyebrow = T('eyebrowStocksCrypto');
+    if (st.includeCash && result.cash.value > 0) eyebrow = T('eyebrowFull');
+    if (scope === 'all') eyebrow = st.includeCash && result.cash.value > 0 ? T('eyebrowFullAll') : T('eyebrowPortfolioAll');
 
     const selectableItems = scope === 'closed'
       ? closedItems

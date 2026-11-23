@@ -2,17 +2,19 @@
 (function (MM) {
   'use strict';
 
-  const APP_VERSION = '1.1.0';
+  const APP_VERSION = '1.2.0';
   const KEY_PREFS = 'mm.prefs';
   const AUTO_REFRESH_MS = 60_000;
 
   const $ = id => document.getElementById(id);
   const F = () => MM.fmt;
+  const T = (k, v) => MM.i18n.t(k, v);
 
   // =========================================================================
   // 1. STAN APLIKACJI
   // =========================================================================
   const defaultPrefs = {
+    lang: 'en',            // 'en' | 'pl'
     mode: 'stocks',        // 'stocks' | 'categories'
     scope: 'open',         // 'open' | 'all' | 'closed'
     includeCash: false,
@@ -32,6 +34,7 @@
   function savePrefs() {
     try {
       localStorage.setItem(KEY_PREFS, JSON.stringify({
+        lang: state.lang,
         mode: state.mode,
         scope: state.scope,
         includeCash: state.includeCash,
@@ -56,6 +59,8 @@
     lockedId: null,
     ai: { format: 'md', hideAmounts: false, withPrompt: true }
   };
+
+  MM.i18n.setLang(state.lang);
 
   // Referencje DOM
   const el = {
@@ -100,6 +105,8 @@
     inToken: $('in-token'),
     btnStyleDonut: $('btn-style-donut'),
     btnStylePie: $('btn-style-pie'),
+    btnLangEn: $('btn-lang-en'),
+    btnLangPl: $('btn-lang-pl'),
     btnSaveConfig: $('btn-save-config'),
     btnDemo: $('btn-demo'),
     btnDisconnect: $('btn-disconnect'),
@@ -114,6 +121,20 @@
     btnAiShare: $('btn-ai-share')
   };
 
+  function applyStaticTranslations() {
+    document.querySelectorAll('[data-i18n]').forEach(n => {
+      n.textContent = T(n.dataset.i18n);
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(n => {
+      n.innerHTML = T(n.dataset.i18nHtml);
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(n => {
+      const txt = T(n.dataset.i18nTitle);
+      n.title = txt;
+      if (n.hasAttribute('aria-label')) n.setAttribute('aria-label', txt);
+    });
+  }
+
   // =========================================================================
   // 2. POBIERANIE DANYCH I CYKL ŻYCIA
   // =========================================================================
@@ -124,16 +145,16 @@
   }
 
   function showSkeleton() {
-    el.statusLine.textContent = 'Pobieranie danych z arkusza…';
+    el.statusLine.textContent = T('loadingData');
     el.legendList.innerHTML = Array.from({ length: 5 }, () =>
       '<div class="skeleton h-[68px] w-full"></div>'
     ).join('');
     el.closedSection.classList.add('hidden');
-    el.centerEyebrow.textContent = 'Ładowanie';
+    el.centerEyebrow.textContent = T('loading');
     el.centerPrimary.textContent = '…';
     el.centerSecondary.textContent = '';
     el.centerTertiary.textContent = '';
-    el.detailContent.textContent = 'Pobieranie pozycji i aktualnych kursów…';
+    el.detailContent.textContent = T('loadingDetail');
   }
 
   async function refresh({ fresh = false } = {}) {
@@ -155,14 +176,14 @@
       state.error = null;
       recomputeAndRender();
     } catch (err) {
-      state.error = err.message || 'Nie udało się pobrać danych.';
+      state.error = err.message || T('connError');
       if (state.payload) {
         recomputeAndRender();
       } else {
         renderNotice();
-        el.statusLine.textContent = 'Błąd połączenia';
+        el.statusLine.textContent = T('connError');
         el.legendList.innerHTML = '';
-        el.detailContent.textContent = 'Sprawdź ustawienia połączenia z arkuszem.';
+        el.detailContent.textContent = T('checkSettings');
       }
     } finally {
       setLoading(false);
@@ -208,30 +229,31 @@
     const badge = marketBadge(r);
     const parts = [badge];
     if (r.market.fetchedAt && !state.isDemo) {
-      parts.push(`<span>Kursy: <strong class="font-medium text-slate-700">${f.time(r.market.fetchedAt)}</strong></span>`);
+      parts.push(`<span>${f.esc(T('quotesAt'))} <strong class="font-medium text-slate-700">${f.time(r.market.fetchedAt)}</strong></span>`);
     }
     if (state.usePrePost && r.anyExtended && state.scope !== 'closed') {
-      parts.push('<span class="px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/80 text-[11px] font-semibold">z Pre/Post</span>');
+      parts.push(`<span class="px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/80 text-[11px] font-semibold">${f.esc(T('withPrePost'))}</span>`);
     }
     if (r.market.source === 'googlefinance') {
-      parts.push('<span class="text-amber-700">(fallback Google Finance, opóźnione)</span>');
+      parts.push(`<span class="text-amber-700">${f.esc(T('gfFallback'))}</span>`);
     }
     el.statusLine.innerHTML = parts.join('<span class="text-slate-300">·</span>');
   }
 
   function marketBadge(r) {
+    const f = F();
     if (state.isDemo) {
-      return '<span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400"></span>Dane przykładowe</span>';
+      return `<span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400"></span>${f.esc(T('demoData'))}</span>`;
     }
     const map = {
-      REGULAR: ['bg-emerald-500', 'Sesja otwarta'],
-      PRE: ['bg-amber-500', 'Pre-market'],
-      POST: ['bg-indigo-500', 'After-hours'],
-      OPEN_24H: ['bg-emerald-500', 'Rynek 24/7'],
-      CLOSED: ['bg-slate-400', 'Rynek zamknięty']
+      REGULAR: ['bg-emerald-500', T('marketRegular')],
+      PRE: ['bg-amber-500', T('marketPre')],
+      POST: ['bg-indigo-500', T('marketPost')],
+      OPEN_24H: ['bg-emerald-500', T('market24h')],
+      CLOSED: ['bg-slate-400', T('marketClosed')]
     };
-    const [dot, label] = map[r.market.state] || ['bg-slate-400', 'Kursy pobrane'];
-    return `<span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full ${dot}"></span>${label}</span>`;
+    const [dot, label] = map[r.market.state] || ['bg-slate-400', T('marketLoaded')];
+    return `<span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full ${dot}"></span>${f.esc(label)}</span>`;
   }
 
   function renderNotice() {
@@ -239,10 +261,10 @@
     if (state.error) {
       el.notice.className = 'mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs sm:text-sm text-rose-800 flex items-center justify-between gap-3 flex-wrap';
       el.notice.innerHTML = `
-        <span><strong>Błąd:</strong> ${f.esc(state.error)}${state.payload ? ' (wyświetlane są ostatnio zapisane dane)' : ''}</span>
+        <span><strong>${f.esc(T('errorLabel'))}</strong> ${f.esc(state.error)}${state.payload ? f.esc(T('showingCached')) : ''}</span>
         <div class="flex gap-2">
-          <button id="notice-retry" type="button" class="px-3 py-1 rounded-lg bg-rose-700 text-white text-xs font-semibold">Ponów</button>
-          <button id="notice-settings" type="button" class="px-3 py-1 rounded-lg bg-white border border-rose-200 text-rose-700 text-xs font-semibold">Ustawienia</button>
+          <button id="notice-retry" type="button" class="px-3 py-1 rounded-lg bg-rose-700 text-white text-xs font-semibold">${f.esc(T('retry'))}</button>
+          <button id="notice-settings" type="button" class="px-3 py-1 rounded-lg bg-white border border-rose-200 text-rose-700 text-xs font-semibold">${f.esc(T('settings'))}</button>
         </div>`;
       $('notice-retry').addEventListener('click', () => refresh({ fresh: true }));
       $('notice-settings').addEventListener('click', openSettings);
@@ -251,8 +273,8 @@
     if (state.isDemo) {
       el.notice.className = 'mb-4 rounded-2xl border border-blue-200/80 bg-blue-50/80 px-4 py-3 text-xs sm:text-sm text-blue-900 flex items-center justify-between gap-3 flex-wrap';
       el.notice.innerHTML = `
-        <span><strong>Tryb demo.</strong> Podłącz swój Arkusz Google, aby zobaczyć własny portfel i aktualne kursy.</span>
-        <button id="notice-connect" type="button" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold">Połącz arkusz</button>`;
+        <span><strong>${f.esc(T('demoBannerTitle'))}</strong> ${f.esc(T('demoBannerText'))}</span>
+        <button id="notice-connect" type="button" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold">${f.esc(T('connectSheet'))}</button>`;
       $('notice-connect').addEventListener('click', openSettings);
       return;
     }
@@ -280,10 +302,9 @@
     el.chipPrePost.classList.toggle('hidden', isClosed || !r.anyExtended);
     el.chipPrePost.setAttribute('aria-pressed', state.usePrePost ? 'true' : 'false');
 
-    // Dopasowanie opcji sortowania dla widoku zamkniętych
     const optVal = el.sortSelect.querySelector('option[value="value"]');
     const optDaily = el.sortSelect.querySelector('option[value="dailyPct"]');
-    if (optVal) optVal.textContent = isClosed ? 'wynik USD' : 'wartość';
+    if (optVal) optVal.textContent = isClosed ? T('sortPnlUsd') : T('sortValue');
     if (optDaily) optDaily.hidden = isClosed;
     if (isClosed && state.sort === 'dailyPct') state.sort = 'value';
     el.sortSelect.value = state.sort;
@@ -311,31 +332,31 @@
     if (!s.closedCount) {
       el.closedSummary.innerHTML = `
         <div class="py-6">
-          <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Zamknięte pozycje</div>
-          <div class="text-sm text-slate-500 mt-2">Brak całkowicie zamkniętych pozycji w arkuszu.</div>
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">${f.esc(T('closedPositions'))}</div>
+          <div class="text-sm text-slate-500 mt-2">${f.esc(T('closedEmpty'))}</div>
         </div>`;
       return;
     }
 
-    const balance = `${s.closedWins} zysk · ${s.closedLosses} strata`;
+    const balance = T('recordBalance', { w: s.closedWins, l: s.closedLosses });
     el.closedSummary.innerHTML = `
-      <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Zrealizowany wynik (${s.closedCount})</div>
+      <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">${f.esc(T('realizedTitle', { n: s.closedCount }))}</div>
       <div class="flex items-center justify-center gap-2 mt-1.5 flex-wrap">
         <span class="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums ${f.gainClass(s.closedPnl)}">${f.signedMoney(s.closedPnl, cur)}</span>
         <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold border tabular-nums ${f.gainBadgeClass(s.closedPnlPct)}">${f.signedPct(s.closedPnlPct)}</span>
       </div>
       <div class="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-slate-200/80 text-xs">
         <div>
-          <span class="text-slate-400 block">Zainwestowano</span>
+          <span class="text-slate-400 block">${f.esc(T('invested'))}</span>
           <span class="font-semibold text-slate-800 tabular-nums">${f.money(s.closedCost, cur)}</span>
         </div>
         <div>
-          <span class="text-slate-400 block">Sprzedano za</span>
+          <span class="text-slate-400 block">${f.esc(T('proceeds'))}</span>
           <span class="font-semibold text-slate-800 tabular-nums">${f.money(s.closedProceeds, cur)}</span>
         </div>
         <div>
-          <span class="text-slate-400 block">Bilans</span>
-          <span class="font-semibold text-slate-800 tabular-nums">${balance}</span>
+          <span class="text-slate-400 block">${f.esc(T('record'))}</span>
+          <span class="font-semibold text-slate-800 tabular-nums">${f.esc(balance)}</span>
         </div>
       </div>`;
   }
@@ -362,8 +383,8 @@
     const f = F();
     if (isClosedItem(item)) {
       const tag = item.kind === 'closed-position'
-        ? '<span class="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 shrink-0">Zamk.</span>'
-        : `<span class="text-[11px] font-medium text-slate-400 shrink-0">${item.positions.length} poz.</span>`;
+        ? `<span class="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 shrink-0">${f.esc(T('closedTag'))}</span>`
+        : `<span class="text-[11px] font-medium text-slate-400 shrink-0">${f.esc(T('posCount', { n: item.positions.length }))}</span>`;
       const badge = `<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-semibold border tabular-nums ${f.gainBadgeClass(item.pnlPct)}">${f.signedPct(item.pnlPct)}</span>`;
       return `
         <div class="flex items-center justify-between gap-3">
@@ -380,7 +401,7 @@
           <div class="text-right shrink-0">
             <div class="font-bold text-sm tabular-nums ${f.gainClass(item.pnl)}">${f.signedMoney(item.pnl, cur)}</div>
             <div class="flex items-center justify-end gap-1.5 mt-0.5">
-              <span class="text-[11px] text-slate-500 tabular-nums">Koszt ${f.money(item.cost, cur)}</span>
+              <span class="text-[11px] text-slate-500 tabular-nums">${f.esc(T('costPrefix'))} ${f.money(item.cost, cur)}</span>
               ${badge}
             </div>
           </div>
@@ -388,19 +409,19 @@
     }
 
     const badge = item.kind === 'cash'
-      ? '<span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Rezerwa</span>'
+      ? `<span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">${f.esc(T('reserveBadge'))}</span>`
       : `<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-semibold border tabular-nums ${f.gainBadgeClass(item.pnlPct)}">${f.signedPct(item.pnlPct)}</span>`;
 
     const qtyBadge = item.kind === 'position'
-      ? `<span class="text-[11px] font-medium text-slate-400 shrink-0 tabular-nums">${f.qty(item.position.quantity)} szt.</span>`
-      : (item.kind === 'category' ? `<span class="text-[11px] font-medium text-slate-400 shrink-0">${item.positions.length} poz.</span>` : '');
+      ? `<span class="text-[11px] font-medium text-slate-400 shrink-0 tabular-nums">${f.esc(T('qtyUnit', { n: f.qty(item.position.quantity) }))}</span>`
+      : (item.kind === 'category' ? `<span class="text-[11px] font-medium text-slate-400 shrink-0">${f.esc(T('posCount', { n: item.positions.length }))}</span>` : '');
 
     const extTag = item.kind === 'position' && item.position.extended && state.usePrePost
       ? `<span class="text-[10px] font-semibold uppercase px-1 py-0.5 rounded bg-amber-50 text-amber-700">${item.position.extended.type}</span>`
       : '';
 
     const dailyLine = item.dailyPct !== null
-      ? `<span class="text-[11px] tabular-nums ${f.gainClass(item.dailyPct)}">dziś ${f.signedPct(item.dailyPct)}</span>`
+      ? `<span class="text-[11px] tabular-nums ${f.gainClass(item.dailyPct)}">${f.esc(T('todayShort'))} ${f.signedPct(item.dailyPct)}</span>`
       : '';
 
     return `
@@ -468,25 +489,25 @@
     if (state.scope === 'closed') {
       el.closedSection.classList.add('hidden');
       el.legendHeading.textContent = state.mode === 'stocks'
-        ? `Zamknięte pozycje (${closedItems.length})`
-        : `Zamknięte kategorie (${closedItems.length})`;
+        ? T('headingClosedPositions', { n: closedItems.length })
+        : T('headingClosedCategories', { n: closedItems.length });
 
       if (!closedItems.length) {
-        el.legendList.innerHTML = '<div class="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">Brak całkowicie zamkniętych pozycji.</div>';
+        el.legendList.innerHTML = `<div class="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">${f.esc(T('emptyClosed'))}</div>`;
         el.footerTotal.textContent = '';
         return;
       }
       closedItems.forEach(item => el.legendList.appendChild(createRowElement(item, cur)));
-      el.footerTotal.textContent = `Wynik zrealizowany: ${f.signedMoney(s.closedPnl, cur)} (${f.signedPct(s.closedPnlPct)})`;
+      el.footerTotal.textContent = T('footerClosed', { p: f.signedMoney(s.closedPnl, cur), pct: f.signedPct(s.closedPnlPct) });
       return;
     }
 
     el.legendHeading.textContent = state.mode === 'stocks'
-      ? `Pozycje (${items.length})`
-      : `Kategorie (${items.length})`;
+      ? T('headingPositions', { n: items.length })
+      : T('headingCategories', { n: items.length });
 
     if (!items.length) {
-      el.legendList.innerHTML = '<div class="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">Brak otwartych pozycji do wyświetlenia. Dodaj transakcje w zakładce „Akcje” lub „Krypto”.</div>';
+      el.legendList.innerHTML = `<div class="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">${f.esc(T('emptyOpen'))}</div>`;
     } else {
       items.forEach(item => el.legendList.appendChild(createRowElement(item, cur)));
     }
@@ -494,13 +515,13 @@
     if (state.scope === 'all' && closedItems.length) {
       el.closedSection.classList.remove('hidden');
       el.closedHeading.textContent = state.mode === 'stocks'
-        ? `Zamknięte pozycje (${closedItems.length})`
-        : `Zamknięte kategorie (${closedItems.length})`;
+        ? T('headingClosedPositions', { n: closedItems.length })
+        : T('headingClosedCategories', { n: closedItems.length });
       closedItems.forEach(item => el.closedList.appendChild(createRowElement(item, cur)));
-      el.footerTotal.textContent = `Portfel: ${f.money(total, cur)} · Łącznie: ${f.signedMoney(s.allPnl, cur)}`;
+      el.footerTotal.textContent = T('footerAll', { v: f.money(total, cur), p: f.signedMoney(s.allPnl, cur) });
     } else {
       el.closedSection.classList.add('hidden');
-      el.footerTotal.textContent = items.length ? `Łącznie: ${f.money(total, cur)} (100,00%)` : '';
+      el.footerTotal.textContent = items.length ? T('footerTotal', { v: f.money(total, cur) }) : '';
     }
   }
 
@@ -515,7 +536,7 @@
     el.warnings.className = 'mt-4 rounded-2xl border border-amber-200/80 bg-amber-50/70 p-3 text-xs text-amber-900';
     el.warnings.innerHTML = `
       <details>
-        <summary class="font-semibold cursor-pointer select-none">Uwagi z arkusza (${list.length})</summary>
+        <summary class="font-semibold cursor-pointer select-none">${f.esc(T('sheetWarnings', { n: list.length }))}</summary>
         <ul class="mt-2 space-y-1 list-disc list-inside text-amber-800">
           ${list.map(w => `<li><span class="font-medium">${f.esc(w.where)}:</span> ${f.esc(w.message)}</li>`).join('')}
         </ul>
@@ -534,7 +555,6 @@
 
     if (state.scope !== 'closed') MM.chart.highlight(el.svg, activeId);
 
-    // Wiersze na obu listach — tylko podświetlenie (szczegóły zawsze w karcie pod kołem)
     [el.legendList, el.closedList].forEach(container => {
       container.querySelectorAll('.legend-row').forEach(row => {
         const id = row.dataset.id;
@@ -544,17 +564,16 @@
       });
     });
 
-    // Środek pierścienia (gdy koło jest widoczne)
     if (state.scope !== 'closed') {
       if (activeItem && isClosedItem(activeItem)) {
-        el.centerEyebrow.textContent = activeItem.kind === 'closed-category' ? 'Zamk. kategoria' : `${activeItem.label} · zamk.`;
+        el.centerEyebrow.textContent = activeItem.kind === 'closed-category' ? T('eyebrowClosedCat') : `${activeItem.label} · ${T('eyebrowClosedSuffix')}`;
         el.centerPrimary.textContent = f.signedPct(activeItem.pnlPct);
         el.centerSecondary.textContent = f.signedMoney(activeItem.pnl, cur);
         el.centerSecondary.className = `text-xs font-semibold mt-1 tabular-nums ${f.gainClass(activeItem.pnl)}`;
-        el.centerTertiary.textContent = `Koszt: ${f.money(activeItem.cost, cur)}`;
+        el.centerTertiary.textContent = `${T('costPrefix')}: ${f.money(activeItem.cost, cur)}`;
         el.centerTertiary.className = 'text-[11px] font-medium text-slate-500 mt-0.5 tabular-nums';
       } else if (activeItem) {
-        el.centerEyebrow.textContent = activeItem.kind === 'category' ? 'Kategoria' : (activeItem.kind === 'cash' ? 'Rezerwa' : activeItem.label);
+        el.centerEyebrow.textContent = activeItem.kind === 'category' ? T('eyebrowCategory') : (activeItem.kind === 'cash' ? T('eyebrowReserve') : activeItem.label);
         el.centerPrimary.textContent = f.pct(activeItem.sharePct);
         el.centerSecondary.textContent = f.money(activeItem.value, cur);
         el.centerSecondary.className = 'text-xs font-semibold text-slate-600 mt-1 tabular-nums';
@@ -577,10 +596,10 @@
             el.centerSecondary.textContent = '';
           }
           if (s.closedCount > 0) {
-            el.centerTertiary.textContent = `Otw.: ${f.signedMoney(s.pnl, cur, 0)} · Zamk.: ${f.signedMoney(s.closedPnl, cur, 0)}`;
+            el.centerTertiary.textContent = `${T('openShort')} ${f.signedMoney(s.pnl, cur, 0)} · ${T('closedShort')} ${f.signedMoney(s.closedPnl, cur, 0)}`;
             el.centerTertiary.className = 'text-[11px] font-medium text-slate-500 mt-0.5 tabular-nums leading-snug';
           } else if (s.daily !== null) {
-            el.centerTertiary.textContent = `Dziś: ${f.signedMoney(s.daily, cur)} (${f.signedPct(s.dailyPct)})`;
+            el.centerTertiary.textContent = `${T('todayPrefix')} ${f.signedMoney(s.daily, cur)} (${f.signedPct(s.dailyPct)})`;
             el.centerTertiary.className = `text-[11px] font-medium mt-0.5 tabular-nums ${f.gainClass(s.daily)}`;
           } else {
             el.centerTertiary.textContent = '';
@@ -593,7 +612,7 @@
             el.centerSecondary.textContent = '';
           }
           if (s.daily !== null) {
-            el.centerTertiary.textContent = `Dziś: ${f.signedMoney(s.daily, cur)} (${f.signedPct(s.dailyPct)})`;
+            el.centerTertiary.textContent = `${T('todayPrefix')} ${f.signedMoney(s.daily, cur)} (${f.signedPct(s.dailyPct)})`;
             el.centerTertiary.className = `text-[11px] font-medium mt-0.5 tabular-nums ${f.gainClass(s.daily)}`;
           } else {
             el.centerTertiary.textContent = '';
@@ -608,7 +627,7 @@
   function extendedInfo(p, cur) {
     if (!p.extended) return '';
     const f = F();
-    const label = p.extended.type === 'pre' ? 'Pre-market' : 'After-hours';
+    const label = p.extended.type === 'pre' ? T('preMarket') : T('afterHours');
     const diff = p.extended.changePct !== undefined ? ` (${f.signedPct(p.extended.changePct)})` : '';
     return `${label}: ${f.price(p.extended.price, cur)}${diff}`;
   }
@@ -617,7 +636,7 @@
     const f = F();
     if (item.kind === 'cash') {
       return item.entries.map(e =>
-        `<div class="flex justify-between py-0.5"><span class="text-slate-500">${f.esc(e.label || 'Gotówka')}</span><span class="font-semibold tabular-nums">${f.money(e.amount, e.currency)}</span></div>`
+        `<div class="flex justify-between py-0.5"><span class="text-slate-500">${f.esc(e.label || T('cashLabel'))}</span><span class="font-semibold tabular-nums">${f.money(e.amount, e.currency)}</span></div>`
       ).join('');
     }
     if (item.kind === 'closed-position') {
@@ -625,66 +644,65 @@
       const period = c.firstDate && c.lastDate ? (c.firstDate === c.lastDate ? c.lastDate : `${c.firstDate} → ${c.lastDate}`) : (c.lastDate || '—');
       return `
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <div><span class="text-slate-400 block">Koszt</span><span class="font-semibold tabular-nums">${f.money(c.cost, cur)}</span></div>
-          <div><span class="text-slate-400 block">Sprzedaż</span><span class="font-semibold tabular-nums">${f.money(c.proceeds, cur)}</span></div>
-          <div><span class="text-slate-400 block">Śr. zakup</span><span class="font-semibold tabular-nums">${f.price(c.avgBuyPrice, cur)}</span></div>
-          <div><span class="text-slate-400 block">Śr. sprzedaż</span><span class="font-semibold tabular-nums">${f.price(c.avgSellPrice, cur)}</span></div>
+          <div><span class="text-slate-400 block">${f.esc(T('lblCost'))}</span><span class="font-semibold tabular-nums">${f.money(c.cost, cur)}</span></div>
+          <div><span class="text-slate-400 block">${f.esc(T('lblProceeds'))}</span><span class="font-semibold tabular-nums">${f.money(c.proceeds, cur)}</span></div>
+          <div><span class="text-slate-400 block">${f.esc(T('lblAvgBuy'))}</span><span class="font-semibold tabular-nums">${f.price(c.avgBuyPrice, cur)}</span></div>
+          <div><span class="text-slate-400 block">${f.esc(T('lblAvgSell'))}</span><span class="font-semibold tabular-nums">${f.price(c.avgSellPrice, cur)}</span></div>
         </div>
         <div class="flex flex-wrap justify-between gap-2 mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
-          <span>Kategoria: <strong class="font-medium text-slate-700">${f.esc(c.category)}</strong></span>
-          <span class="tabular-nums">Okres: ${f.esc(period)}${c.fees > 0 ? ` · Prowizje: ${f.money(c.fees, cur)}` : ''}</span>
+          <span>${f.esc(T('lblCategory'))}: <strong class="font-medium text-slate-700">${f.esc(c.category)}</strong></span>
+          <span class="tabular-nums">${f.esc(T('lblPeriod'))}: ${f.esc(period)}${c.fees > 0 ? ` · ${f.esc(T('lblFees'))}: ${f.money(c.fees, cur)}` : ''}</span>
         </div>`;
     }
     if (item.kind === 'closed-category') {
       return `
         <div class="grid grid-cols-3 gap-2">
-          <div><span class="text-slate-400 block">Koszt</span><span class="font-semibold tabular-nums">${f.money(item.cost, cur)}</span></div>
-          <div><span class="text-slate-400 block">Sprzedaż</span><span class="font-semibold tabular-nums">${f.money(item.proceeds, cur)}</span></div>
-          <div><span class="text-slate-400 block">Zrealizowane</span><span class="font-bold tabular-nums ${f.gainClass(item.pnl)}">${f.signedMoney(item.pnl, cur)}</span></div>
+          <div><span class="text-slate-400 block">${f.esc(T('lblCost'))}</span><span class="font-semibold tabular-nums">${f.money(item.cost, cur)}</span></div>
+          <div><span class="text-slate-400 block">${f.esc(T('lblProceeds'))}</span><span class="font-semibold tabular-nums">${f.money(item.proceeds, cur)}</span></div>
+          <div><span class="text-slate-400 block">${f.esc(T('lblRealized'))}</span><span class="font-bold tabular-nums ${f.gainClass(item.pnl)}">${f.signedMoney(item.pnl, cur)}</span></div>
         </div>`;
     }
     if (item.kind === 'category') {
       const partial = item.hasPartialSales
         ? `<div class="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500 flex flex-wrap justify-between gap-2 tabular-nums">
-            <span>Otwarte: <strong class="${f.gainClass(item.unrealizedPnl)}">${f.signedMoney(item.unrealizedPnl, cur)}</strong></span>
-            <span>Częściowo zrealizowane: <strong class="${f.gainClass(item.realized)}">${f.signedMoney(item.realized, cur)}</strong></span>
+            <span>${f.esc(T('lblOpenPnl'))}: <strong class="${f.gainClass(item.unrealizedPnl)}">${f.signedMoney(item.unrealizedPnl, cur)}</strong></span>
+            <span>${f.esc(T('lblPartialRealizedCat'))}: <strong class="${f.gainClass(item.realized)}">${f.signedMoney(item.realized, cur)}</strong></span>
           </div>`
         : '';
       return `
         <div class="grid grid-cols-3 gap-2">
-          <div><span class="text-slate-400 block">Koszt</span><span class="font-semibold tabular-nums">${f.money(item.cost, cur)}</span></div>
-          <div><span class="text-slate-400 block">Wynik</span><span class="font-bold tabular-nums ${f.gainClass(item.pnl)}">${f.signedMoney(item.pnl, cur)}</span></div>
-          <div><span class="text-slate-400 block">Dziś</span><span class="font-semibold tabular-nums ${f.gainClass(item.daily)}">${item.daily !== null ? f.signedMoney(item.daily, cur) : '—'}</span></div>
+          <div><span class="text-slate-400 block">${f.esc(T('lblCost'))}</span><span class="font-semibold tabular-nums">${f.money(item.cost, cur)}</span></div>
+          <div><span class="text-slate-400 block">${f.esc(T('lblPnl'))}</span><span class="font-bold tabular-nums ${f.gainClass(item.pnl)}">${f.signedMoney(item.pnl, cur)}</span></div>
+          <div><span class="text-slate-400 block">${f.esc(T('lblToday'))}</span><span class="font-semibold tabular-nums ${f.gainClass(item.daily)}">${item.daily !== null ? f.signedMoney(item.daily, cur) : '—'}</span></div>
         </div>${partial}`;
     }
     const p = item.position;
     const ext = extendedInfo(p, cur);
     const partial = p.hasPartialSales
       ? `<div class="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500 flex flex-wrap justify-between gap-2 tabular-nums">
-          <span>Otwarte: <strong class="${f.gainClass(p.unrealizedPnl)}">${f.signedMoney(p.unrealizedPnl, cur)}</strong></span>
-          <span>Zrealizowane (${f.qty(p.totalSoldQty)} szt.): <strong class="${f.gainClass(p.realized)}">${f.signedMoney(p.realized, cur)}</strong></span>
+          <span>${f.esc(T('lblOpenPnl'))}: <strong class="${f.gainClass(p.unrealizedPnl)}">${f.signedMoney(p.unrealizedPnl, cur)}</strong></span>
+          <span>${f.esc(T('lblPartialRealized', { qty: f.qty(p.totalSoldQty) }))}: <strong class="${f.gainClass(p.realized)}">${f.signedMoney(p.realized, cur)}</strong></span>
         </div>`
       : '';
     return `
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <div><span class="text-slate-400 block">Śr. zakup</span><span class="font-semibold tabular-nums">${f.price(p.avgCost, cur)}</span></div>
-        <div><span class="text-slate-400 block">Kurs${p.priceSource === 'pre' ? ' (pre)' : p.priceSource === 'post' ? ' (post)' : ''}</span><span class="font-semibold tabular-nums">${f.price(p.price, cur)}</span></div>
-        <div><span class="text-slate-400 block">Koszt</span><span class="font-semibold tabular-nums">${f.money(p.cost, cur)}</span></div>
-        <div><span class="text-slate-400 block">Wynik</span><span class="font-bold tabular-nums ${f.gainClass(p.pnl)}">${f.signedMoney(p.pnl, cur)}</span></div>
+        <div><span class="text-slate-400 block">${f.esc(T('lblAvgBuy'))}</span><span class="font-semibold tabular-nums">${f.price(p.avgCost, cur)}</span></div>
+        <div><span class="text-slate-400 block">${f.esc(T('lblPrice'))}${p.priceSource === 'pre' ? ' (pre)' : p.priceSource === 'post' ? ' (post)' : ''}</span><span class="font-semibold tabular-nums">${f.price(p.price, cur)}</span></div>
+        <div><span class="text-slate-400 block">${f.esc(T('lblCost'))}</span><span class="font-semibold tabular-nums">${f.money(p.cost, cur)}</span></div>
+        <div><span class="text-slate-400 block">${f.esc(T('lblPnl'))}</span><span class="font-bold tabular-nums ${f.gainClass(p.pnl)}">${f.signedMoney(p.pnl, cur)}</span></div>
       </div>${partial}
       <div class="flex flex-wrap justify-between gap-2 mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
-        <span>Kategoria: <strong class="font-medium text-slate-700">${f.esc(p.category)}</strong></span>
+        <span>${f.esc(T('lblCategory'))}: <strong class="font-medium text-slate-700">${f.esc(p.category)}</strong></span>
         ${ext ? `<span class="font-medium text-amber-700 tabular-nums">${f.esc(ext)}</span>` : ''}
       </div>`;
   }
 
   function renderDetailBanner(item, cur) {
+    const f = F();
     if (!item) {
       el.detailBanner.className = 'w-full mt-4 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4 transition-all';
-      const hint = state.scope === 'closed'
-        ? 'Dotknij zamkniętej pozycji na liście, aby sprawdzić szczegóły.'
-        : 'Najedź lub dotknij segment wykresu albo pozycję z listy, aby sprawdzić szczegóły.';
-      el.detailContent.innerHTML = `<div class="text-center text-xs text-slate-500">${hint}</div>`;
+      const hint = state.scope === 'closed' ? T('hintClosed') : T('hintDefault');
+      el.detailContent.innerHTML = `<div class="text-center text-xs text-slate-500">${f.esc(hint)}</div>`;
       return;
     }
     el.detailBanner.className = 'w-full mt-4 rounded-2xl ring-2 ring-slate-900 bg-white p-3.5 sm:p-4 shadow-sm transition-all';
@@ -698,23 +716,23 @@
     const cur = state.computed.base;
     let body = '';
     if (item.kind === 'cash') {
-      body = `<div class="flex justify-between"><span class="text-slate-400">Kwota:</span><span class="font-semibold tabular-nums">${f.money(item.value, cur)}</span></div>`;
+      body = `<div class="flex justify-between"><span class="text-slate-400">${f.esc(T('ttAmount'))}</span><span class="font-semibold tabular-nums">${f.money(item.value, cur)}</span></div>`;
     } else if (item.kind === 'category') {
       body = `
-        <div class="flex justify-between"><span class="text-slate-400">Wartość:</span><span class="font-semibold tabular-nums">${f.money(item.value, cur)}</span></div>
-        <div class="flex justify-between"><span class="text-slate-400">Pozycje:</span><span class="text-slate-200 text-right">${f.esc(item.subtitle)}</span></div>
-        <div class="flex justify-between pt-1.5 mt-1 border-t border-slate-800"><span class="text-slate-400">Wynik:</span><span class="font-bold tabular-nums ${f.gainClass(item.pnl, true)}">${f.signedMoney(item.pnl, cur)} (${f.signedPct(item.pnlPct)})</span></div>`;
+        <div class="flex justify-between"><span class="text-slate-400">${f.esc(T('ttValue'))}</span><span class="font-semibold tabular-nums">${f.money(item.value, cur)}</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">${f.esc(T('ttPositions'))}</span><span class="text-slate-200 text-right">${f.esc(item.subtitle)}</span></div>
+        <div class="flex justify-between pt-1.5 mt-1 border-t border-slate-800"><span class="text-slate-400">${f.esc(T('ttPnl'))}</span><span class="font-bold tabular-nums ${f.gainClass(item.pnl, true)}">${f.signedMoney(item.pnl, cur)} (${f.signedPct(item.pnlPct)})</span></div>`;
     } else {
       const p = item.position;
       const ext = extendedInfo(p, cur);
       body = `
-        <div class="flex justify-between"><span class="text-slate-400">Wartość:</span><span class="font-semibold tabular-nums">${f.money(p.value, cur)}</span></div>
-        <div class="flex justify-between"><span class="text-slate-400">Ilość:</span><span class="tabular-nums">${f.qty(p.quantity)} szt.</span></div>
-        <div class="flex justify-between"><span class="text-slate-400">Śr. zakup:</span><span class="tabular-nums">${f.price(p.avgCost, cur)}</span></div>
-        <div class="flex justify-between"><span class="text-slate-400">Kurs (sesja):</span><span class="tabular-nums">${f.price(p.regularPrice ?? p.price, cur)}</span></div>
-        ${ext ? `<div class="flex justify-between text-amber-300"><span>Poza sesją:</span><span class="tabular-nums">${f.esc(ext.replace(/^[^:]+:\s*/, ''))}</span></div>` : ''}
-        <div class="flex justify-between"><span class="text-slate-400">Kategoria:</span><span class="text-slate-300 text-right">${f.esc(p.category)}</span></div>
-        <div class="flex justify-between pt-1.5 mt-1 border-t border-slate-800"><span class="text-slate-400">Wynik:</span><span class="font-bold tabular-nums ${f.gainClass(p.pnl, true)}">${f.signedMoney(p.pnl, cur)} (${f.signedPct(p.pnlPct)})</span></div>`;
+        <div class="flex justify-between"><span class="text-slate-400">${f.esc(T('ttValue'))}</span><span class="font-semibold tabular-nums">${f.money(p.value, cur)}</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">${f.esc(T('ttQty'))}</span><span class="tabular-nums">${f.esc(T('qtyUnit', { n: f.qty(p.quantity) }))}</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">${f.esc(T('ttAvgBuy'))}</span><span class="tabular-nums">${f.price(p.avgCost, cur)}</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">${f.esc(T('ttSessionPrice'))}</span><span class="tabular-nums">${f.price(p.regularPrice ?? p.price, cur)}</span></div>
+        ${ext ? `<div class="flex justify-between text-amber-300"><span>${f.esc(T('ttExtended'))}</span><span class="tabular-nums">${f.esc(ext.replace(/^[^:]+:\s*/, ''))}</span></div>` : ''}
+        <div class="flex justify-between"><span class="text-slate-400">${f.esc(T('ttCategory'))}</span><span class="text-slate-300 text-right">${f.esc(p.category)}</span></div>
+        <div class="flex justify-between pt-1.5 mt-1 border-t border-slate-800"><span class="text-slate-400">${f.esc(T('ttPnl'))}</span><span class="font-bold tabular-nums ${f.gainClass(p.pnl, true)}">${f.signedMoney(p.pnl, cur)} (${f.signedPct(p.pnlPct)})</span></div>`;
     }
     el.tooltip.innerHTML = `
       <div class="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-700/80">
@@ -750,6 +768,7 @@
     el.inApi.value = cfg ? cfg.api : '';
     el.inToken.value = cfg ? cfg.token : '';
     syncStyleButtons();
+    syncLangButtons();
     el.btnDisconnect.classList.toggle('hidden', !cfg);
     el.dlgSettings.showModal();
   }
@@ -757,6 +776,20 @@
   function syncStyleButtons() {
     el.btnStyleDonut.setAttribute('aria-selected', state.chartStyle === 'donut' ? 'true' : 'false');
     el.btnStylePie.setAttribute('aria-selected', state.chartStyle === 'pie' ? 'true' : 'false');
+  }
+
+  function syncLangButtons() {
+    el.btnLangEn.setAttribute('aria-selected', state.lang === 'en' ? 'true' : 'false');
+    el.btnLangPl.setAttribute('aria-selected', state.lang === 'pl' ? 'true' : 'false');
+  }
+
+  function setLanguage(lang) {
+    state.lang = MM.i18n.setLang(lang);
+    savePrefs();
+    applyStaticTranslations();
+    syncLangButtons();
+    if (state.isDemo) state.payload = MM.demo.payload();
+    recomputeAndRender();
   }
 
   function updateAiText() {
@@ -775,7 +808,7 @@
     if (!state.computed) return;
     updateAiText();
     el.btnAiShare.classList.toggle('hidden', !navigator.share);
-    el.btnAiCopy.textContent = 'Kopiuj';
+    el.btnAiCopy.textContent = T('btnCopy');
     el.dlgAi.showModal();
   }
 
@@ -818,6 +851,8 @@
 
     el.btnStyleDonut.addEventListener('click', () => { state.chartStyle = 'donut'; savePrefs(); syncStyleButtons(); recomputeAndRender(); });
     el.btnStylePie.addEventListener('click', () => { state.chartStyle = 'pie'; savePrefs(); syncStyleButtons(); recomputeAndRender(); });
+    el.btnLangEn.addEventListener('click', () => setLanguage('en'));
+    el.btnLangPl.addEventListener('click', () => setLanguage('pl'));
 
     function parseConnectInput(raw) {
       const s = String(raw || '').trim();
@@ -844,7 +879,7 @@
       trySplitConnectInput();
       const api = el.inApi.value.trim();
       const token = el.inToken.value.trim();
-      if (!api || !token) { alert('Podaj adres API i token (albo wklej cały link z Arkusza).'); return; }
+      if (!api || !token) { alert(T('alertMissingCreds')); return; }
       MM.api.saveConfig(api, token);
       state.payload = null;
       el.dlgSettings.close();
@@ -853,7 +888,7 @@
 
     el.btnDemo.addEventListener('click', () => { el.dlgSettings.close(); enterDemo(); });
     el.btnDisconnect.addEventListener('click', () => {
-      if (!confirm('Odłączyć arkusz od tej przeglądarki? (Dane w arkuszu pozostają nienaruszone.)')) return;
+      if (!confirm(T('confirmDisconnect'))) return;
       MM.api.clearConfig();
       el.dlgSettings.close();
       enterDemo();
@@ -866,11 +901,11 @@
     el.aiPrompt.addEventListener('click', () => { state.ai.withPrompt = !state.ai.withPrompt; updateAiText(); });
     el.btnAiCopy.addEventListener('click', async () => {
       await copyText(el.aiText.value);
-      el.btnAiCopy.textContent = 'Skopiowano ✓';
-      setTimeout(() => { el.btnAiCopy.textContent = 'Kopiuj'; }, 1800);
+      el.btnAiCopy.textContent = T('btnCopied');
+      setTimeout(() => { el.btnAiCopy.textContent = T('btnCopy'); }, 1800);
     });
     el.btnAiShare.addEventListener('click', () => {
-      navigator.share({ title: `${state.computed.portfolioName} — podsumowanie`, text: el.aiText.value }).catch(() => {});
+      navigator.share({ title: T('aiShareTitle', { name: state.computed.portfolioName }), text: el.aiText.value }).catch(() => {});
     });
 
     // Kliknięcie poza wykresem/listą zdejmuje zaznaczenie
@@ -899,6 +934,7 @@
 
   function init() {
     el.appVersion.textContent = APP_VERSION;
+    applyStaticTranslations();
     bindEvents();
 
     // Jednorazowe podłączenie z linku QR (#connect?api=...&token=...)

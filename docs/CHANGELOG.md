@@ -1,5 +1,11 @@
 # Changelog — myMarket
 
+## [1.2.0] — 2026-11-23
+- **Dwujęzyczność EN / PL (domyślnie angielski):**
+  - Nowy moduł [web/js/i18n.js](../web/js/i18n.js) oraz przełącznik języka `English | Polski` w Ustawieniach.
+  - Automatyczne formatowanie liczb i dat zgodnie z wybranym językiem (`10,823.35 USD` w EN vs `10 823,35 USD` w PL).
+  - Pełne tłumaczenie interfejsu, dialogów oraz eksportu dla AI.
+
 ## [1.1.0] — 2026-11-23
 - **Zakres pozycji: Otwarte / Wszystkie / Zamknięte (Krok 2):**
   - W trybie **Otwarte** wynik otwartej pozycji uwzględnia również zrealizowany zysk/stratę z częściowych sprzedaży tego samego tickera (procent liczony od całego kosztu zakupów; w karcie szczegółów pod kołem pojawia się rozbicie `Otwarte / Zrealizowane`).

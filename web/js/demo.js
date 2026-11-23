@@ -20,7 +20,7 @@
       apiVersion: 1,
       appVersion: 'demo',
       generatedAt: new Date().toISOString(),
-      portfolio: { name: 'Portfel demo', baseCurrency: 'USD' },
+      portfolio: { name: (MM.i18n && MM.i18n.t('demoPortfolioName')) || 'Demo portfolio', baseCurrency: 'USD' },
       instruments: [
         { ticker: 'META', name: 'Meta Platforms, Inc.', category: 'Platformy / Reklama AI', assetClass: 'STOCK', symbol: null, currency: 'USD', color: '#2563EB', active: true },
         { ticker: 'NVDA', name: 'NVIDIA Corporation', category: 'Półprzewodniki i sprzęt AI', assetClass: 'STOCK', symbol: null, currency: 'USD', color: '#10B981', active: true },

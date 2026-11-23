@@ -1,17 +1,22 @@
-/* myMarket — formatowanie (standard polski: spacja tysięcy, przecinek dziesiętny) */
+/* myMarket — formatowanie liczb i dat (dopasowane do aktywnego języka EN / PL) */
 (function (MM) {
   'use strict';
   const NBSP = '\u00A0';
 
   function isNum(n) { return typeof n === 'number' && isFinite(n); }
+  function lang() { return (MM.i18n && MM.i18n.getLang()) || 'en'; }
+  function locale() { return lang() === 'pl' ? 'pl-PL' : 'en-GB'; }
 
   function num(n, d = 2) {
     if (!isNum(n)) return '—';
+    const isPl = lang() === 'pl';
+    const sep = isPl ? NBSP : ',';
+    const dec = isPl ? ',' : '.';
     const fixed = Math.abs(n).toFixed(d);
     const [i, f] = fixed.split('.');
-    const int = i.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
+    const int = i.replace(/\B(?=(\d{3})+(?!\d))/g, sep);
     const neg = n < 0 && Number(fixed) !== 0;
-    return (neg ? '-' : '') + int + (f !== undefined ? ',' + f : '');
+    return (neg ? '-' : '') + int + (f !== undefined ? dec + f : '');
   }
 
   function sign(n, d) { return isNum(n) && Number(n.toFixed(d)) > 0 ? '+' : ''; }
@@ -32,20 +37,21 @@
   function qty(n) {
     if (!isNum(n)) return '—';
     if (Math.abs(n - Math.round(n)) < 1e-9) return num(Math.round(n), 0);
+    const dec = lang() === 'pl' ? ',' : '.';
     const s = n.toFixed(8).replace(/0+$/, '').replace(/\.$/, '');
     const [i, f] = s.split('.');
-    return num(Number(i), 0) + (f ? ',' + f : '');
+    return num(Number(i), 0) + (f ? dec + f : '');
   }
 
   function dateTime(tsSec) {
     if (!tsSec) return '—';
     const d = new Date(tsSec * 1000);
-    return d.toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleString(locale(), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
   }
 
   function time(tsSec) {
     if (!tsSec) return '—';
-    return new Date(tsSec * 1000).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+    return new Date(tsSec * 1000).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit', hour12: false });
   }
 
   function esc(s) {
