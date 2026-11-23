@@ -2,7 +2,7 @@
 (function (MM) {
   'use strict';
 
-  const APP_VERSION = '1.0.2';
+  const APP_VERSION = '1.0.3';
   const KEY_PREFS = 'mm.prefs';
   const AUTO_REFRESH_MS = 60_000;
 
@@ -281,6 +281,54 @@
     });
   }
 
+  function itemHeaderHtml(item, cur) {
+    const f = F();
+    const badge = item.kind === 'cash'
+      ? '<span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Rezerwa</span>'
+      : `<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-semibold border tabular-nums ${f.gainBadgeClass(item.pnlPct)}">${f.signedPct(item.pnlPct)}</span>`;
+
+    const qtyBadge = item.kind === 'position'
+      ? `<span class="text-[11px] font-medium text-slate-400 shrink-0 tabular-nums">${f.qty(item.position.quantity)} szt.</span>`
+      : (item.kind === 'category' ? `<span class="text-[11px] font-medium text-slate-400 shrink-0">${item.positions.length} poz.</span>` : '');
+
+    const extTag = item.kind === 'position' && item.position.extended && state.usePrePost
+      ? `<span class="text-[10px] font-semibold uppercase px-1 py-0.5 rounded bg-amber-50 text-amber-700">${item.position.extended.type}</span>`
+      : '';
+
+    const dailyLine = item.dailyPct !== null
+      ? `<span class="text-[11px] tabular-nums ${f.gainClass(item.dailyPct)}">dziś ${f.signedPct(item.dailyPct)}</span>`
+      : '';
+
+    return `
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm ring-2 ring-white" style="background-color:${f.esc(item.color)}"></span>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="font-bold text-sm text-slate-900 truncate">${f.esc(item.label)}</span>
+              ${qtyBadge}${extTag}
+            </div>
+            <div class="text-xs text-slate-500 truncate">${f.esc(item.subtitle)}</div>
+          </div>
+        </div>
+        <div class="text-right shrink-0">
+          <div class="font-bold text-sm text-slate-900 tabular-nums">${f.money(item.value, cur)}</div>
+          <div class="flex items-center justify-end gap-1.5 mt-0.5">
+            <span class="text-xs font-semibold text-slate-600 tabular-nums">${f.pct(item.sharePct)}</span>
+            ${badge}
+          </div>
+          ${dailyLine ? `<div class="mt-0.5">${dailyLine}</div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  function scrollToDetailIfHidden() {
+    const r = el.detailBanner.getBoundingClientRect();
+    if (r.top < 12 || r.bottom > window.innerHeight - 12) {
+      el.detailBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
   function renderLegend() {
     const f = F();
     const r = state.computed;
@@ -301,63 +349,24 @@
     el.legendList.innerHTML = '';
     items.forEach(item => {
       const row = document.createElement('div');
-      row.className = 'legend-row rounded-2xl border border-slate-200/80 bg-white hover:border-slate-300 transition-all cursor-pointer';
+      row.className = 'legend-row rounded-2xl border border-slate-200/80 bg-white hover:border-slate-300 transition-all cursor-pointer p-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40';
       row.dataset.id = item.id;
       row.setAttribute('role', 'button');
       row.setAttribute('tabindex', '0');
+      row.innerHTML = itemHeaderHtml(item, cur);
 
-      const badge = item.kind === 'cash'
-        ? '<span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Rezerwa</span>'
-        : `<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-semibold border tabular-nums ${f.gainBadgeClass(item.pnlPct)}">${f.signedPct(item.pnlPct)}</span>`;
-
-      const qtyBadge = item.kind === 'position'
-        ? `<span class="text-[11px] font-medium text-slate-400 shrink-0 tabular-nums">${f.qty(item.position.quantity)} szt.</span>`
-        : (item.kind === 'category' ? `<span class="text-[11px] font-medium text-slate-400 shrink-0">${item.positions.length} poz.</span>` : '');
-
-      const extTag = item.kind === 'position' && item.position.extended && state.usePrePost
-        ? `<span class="text-[10px] font-semibold uppercase px-1 py-0.5 rounded bg-amber-50 text-amber-700">${item.position.extended.type}</span>`
-        : '';
-
-      const dailyLine = item.dailyPct !== null
-        ? `<span class="text-[11px] tabular-nums ${f.gainClass(item.dailyPct)}">dziś ${f.signedPct(item.dailyPct)}</span>`
-        : '';
-
-      row.innerHTML = `
-        <div class="flex items-center justify-between gap-3 p-3">
-          <div class="flex items-center gap-3 min-w-0">
-            <span class="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm ring-2 ring-white" style="background-color:${f.esc(item.color)}"></span>
-            <div class="min-w-0">
-              <div class="flex items-center gap-1.5">
-                <span class="font-bold text-sm text-slate-900 truncate">${f.esc(item.label)}</span>
-                ${qtyBadge}${extTag}
-              </div>
-              <div class="text-xs text-slate-500 truncate">${f.esc(item.subtitle)}</div>
-            </div>
-          </div>
-          <div class="text-right shrink-0">
-            <div class="font-bold text-sm text-slate-900 tabular-nums">${f.money(item.value, cur)}</div>
-            <div class="flex items-center justify-end gap-1.5 mt-0.5">
-              <span class="text-xs font-semibold text-slate-600 tabular-nums">${f.pct(item.sharePct)}</span>
-              ${badge}
-            </div>
-            ${dailyLine ? `<div class="mt-0.5">${dailyLine}</div>` : ''}
-          </div>
-        </div>
-        <div class="row-extra hidden px-3 pb-3 pt-2 border-t border-slate-100 text-xs"></div>`;
+      const toggleSelect = () => {
+        const locking = state.lockedId !== item.id;
+        state.lockedId = locking ? item.id : null;
+        applyHighlight();
+        if (locking) scrollToDetailIfHidden();
+      };
 
       row.addEventListener('mouseenter', () => { state.hoveredId = item.id; applyHighlight(); });
       row.addEventListener('mouseleave', () => { state.hoveredId = null; applyHighlight(); });
-      row.addEventListener('click', e => {
-        e.stopPropagation();
-        state.lockedId = state.lockedId === item.id ? null : item.id;
-        applyHighlight();
-      });
+      row.addEventListener('click', e => { e.stopPropagation(); toggleSelect(); });
       row.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          state.lockedId = state.lockedId === item.id ? null : item.id;
-          applyHighlight();
-        }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelect(); }
       });
 
       el.legendList.appendChild(row);
@@ -396,21 +405,12 @@
 
     MM.chart.highlight(el.svg, activeId);
 
-    // Wiersze legendy + rozwijanie zablokowanego wiersza (wygodne na telefonie)
+    // Wiersze legendy — tylko podświetlenie (szczegóły zawsze w karcie pod kołem)
     el.legendList.querySelectorAll('.legend-row').forEach(row => {
       const id = row.dataset.id;
       const isAct = id === activeId;
-      const isLocked = id === state.lockedId;
       row.dataset.active = isAct ? 'true' : 'false';
       row.dataset.dim = activeId && !isAct ? 'true' : 'false';
-      const extra = row.querySelector('.row-extra');
-      if (isLocked) {
-        const it = state.viewData.items.find(x => x.id === id);
-        extra.innerHTML = it ? rowExtraHtml(it, cur) : '';
-        extra.classList.remove('hidden');
-      } else {
-        extra.classList.add('hidden');
-      }
     });
 
     // Środek pierścienia
@@ -485,23 +485,15 @@
   }
 
   function renderDetailBanner(item, cur) {
-    const f = F();
     if (!item) {
       el.detailBanner.className = 'w-full mt-4 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4 transition-all';
       el.detailContent.innerHTML = '<div class="text-center text-xs text-slate-500">Najedź lub dotknij segment wykresu albo pozycję z listy, aby sprawdzić szczegóły.</div>';
       return;
     }
-    el.detailBanner.className = 'w-full mt-4 rounded-2xl border border-slate-300/90 bg-white p-4 shadow-sm transition-all';
-    const header = `
-      <div class="flex items-center justify-between gap-2 mb-2">
-        <div class="flex items-center gap-2 min-w-0">
-          <span class="w-3 h-3 rounded-full shrink-0" style="background-color:${f.esc(item.color)}"></span>
-          <span class="font-bold text-sm text-slate-900 truncate">${f.esc(item.label)}</span>
-          ${item.kind === 'position' ? `<span class="text-xs text-slate-500 truncate">${f.esc(item.subtitle)}</span>` : ''}
-        </div>
-        <span class="text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md shrink-0 tabular-nums">${f.pct(item.sharePct)}</span>
-      </div>`;
-    el.detailContent.innerHTML = header + `<div class="pt-2 border-t border-slate-100 text-xs">${rowExtraHtml(item, cur)}</div>`;
+    el.detailBanner.className = 'w-full mt-4 rounded-2xl ring-2 ring-slate-900 bg-white p-3.5 sm:p-4 shadow-sm transition-all';
+    el.detailContent.innerHTML = `
+      ${itemHeaderHtml(item, cur)}
+      <div class="mt-3 pt-2.5 border-t border-slate-100 text-xs">${rowExtraHtml(item, cur)}</div>`;
   }
 
   function showTooltip(item, event) {
