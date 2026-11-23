@@ -1,5 +1,10 @@
 # Changelog — myMarket
 
+## [1.3.0] — 2026-11-23
+- **Najbliższe wyniki finansowe (Earnings):**
+  - Backend ([apps-script/Code.gs](../apps-script/Code.gs)): zbiorcze pobieranie nadchodzących dat wyników dla otwartych akcji (Yahoo Finance `v7/finance/quote` z sesyjnym cookie/crumb + fallback Nasdaq, cache 6h) oraz podgląd w menu `myMarket → Testuj kursy`.
+  - Frontend: wyświetlanie najbliższej daty wyników z odliczaniem dni (oraz oznaczeniem `est. / szac.`) w karcie szczegółów spółki pod wykresem (wyróżnienie na niebiesko w ciągu 14 dni), w tooltipie na desktopie oraz w eksporcie dla AI.
+
 ## [1.2.1] — 2026-11-23
 - Poprawka układu w środku wykresu pierścieniowego w trybie `All / Wszystkie`: rozbicie `Open` i `Closed` ułożone jedna pod drugą z kolorowaniem kwot, dzięki czemu bez problemu mieści się w kole również dla dużych wartości.
 

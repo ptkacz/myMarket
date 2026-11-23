@@ -54,6 +54,16 @@
     return new Date(tsSec * 1000).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit', hour12: false });
   }
 
+  function shortDate(iso) {
+    if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso || '—';
+    const [y, m, d] = iso.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    if (lang() === 'pl') {
+      return dt.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
   function esc(s) {
     return String(s === null || s === undefined ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -70,5 +80,5 @@
     return n > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200/70' : 'bg-rose-50 text-rose-700 border-rose-200/70';
   }
 
-  MM.fmt = { isNum, num, money, signedMoney, pct, signedPct, price, qty, dateTime, time, esc, gainClass, gainBadgeClass };
+  MM.fmt = { isNum, num, money, signedMoney, pct, signedPct, price, qty, dateTime, time, shortDate, esc, gainClass, gainBadgeClass };
 })(window.MM = window.MM || {});

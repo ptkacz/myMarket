@@ -97,6 +97,13 @@
       });
     }
     L.push('');
+    const upcoming = result.positions
+      .filter(p => p.earnings)
+      .sort((a, b) => a.earnings.daysUntil - b.earnings.daysUntil);
+    if (upcoming.length) {
+      L.push(`- ${T('lblEarnings')}: ${upcoming.map(p => `${p.ticker} ${p.earnings.date}${p.earnings.estimate ? ` (${T('earningsEst')})` : ''}`).join(', ')}`);
+      L.push('');
+    }
     L.push(T('aiSecCat'));
     L.push(`| ${T('aiColCat')} | ${T('aiColShare')} | ${T('aiColPnlPct')} |`);
     L.push('|---|---|---|');
@@ -137,7 +144,8 @@
         pnl: hide ? undefined : r2(p.pnl),
         unrealizedPnl: hide || !p.hasPartialSales ? undefined : r2(p.unrealizedPnl),
         partialRealizedPnl: hide || !p.hasPartialSales ? undefined : r2(p.realized),
-        pnlPct: r2(p.pnlPct), dailyPct: r2(p.dailyPct)
+        pnlPct: r2(p.pnlPct), dailyPct: r2(p.dailyPct),
+        nextEarnings: p.earnings ? { date: p.earnings.date, estimate: p.earnings.estimate } : undefined
       })),
       closedPositions: result.closed.map(c => ({
         ticker: c.ticker, name: c.name, category: c.category, assetClass: c.assetClass,

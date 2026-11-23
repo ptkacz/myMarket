@@ -121,6 +121,11 @@
       lblOpenPnl: 'Open',
       lblPartialRealized: 'Realized ({qty} sh.)',
       lblPartialRealizedCat: 'Partially realized',
+      lblEarnings: 'Next earnings',
+      earningsToday: 'today',
+      earningsTomorrow: 'tomorrow',
+      earningsInDays: 'in {n}d',
+      earningsEst: 'est.',
       preMarket: 'Pre-market',
       afterHours: 'After-hours',
       ttAmount: 'Amount:',
@@ -132,6 +137,7 @@
       ttSessionPrice: 'Session price:',
       ttExtended: 'Extended:',
       ttCategory: 'Category:',
+      ttEarnings: 'Next earnings:',
 
       // Settings dialog
       settingsTitle: 'Settings',
@@ -305,6 +311,11 @@
       lblOpenPnl: 'Otwarte',
       lblPartialRealized: 'Zrealizowane ({qty} szt.)',
       lblPartialRealizedCat: 'Częściowo zrealizowane',
+      lblEarnings: 'Najbliższe wyniki',
+      earningsToday: 'dziś',
+      earningsTomorrow: 'jutro',
+      earningsInDays: 'za {n} dni',
+      earningsEst: 'szac.',
       preMarket: 'Pre-market',
       afterHours: 'After-hours',
       ttAmount: 'Kwota:',
@@ -316,6 +327,7 @@
       ttSessionPrice: 'Kurs (sesja):',
       ttExtended: 'Poza sesją:',
       ttCategory: 'Kategoria:',
+      ttEarnings: 'Wyniki:',
 
       // Settings dialog
       settingsTitle: 'Ustawienia',

@@ -16,6 +16,12 @@
       currency: 'USD', fee: 0, fxPln: null, note
     });
 
+    const addDays = n => {
+      const d = new Date();
+      d.setDate(d.getDate() + n);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+
     return {
       apiVersion: 1,
       appVersion: 'demo',
@@ -63,6 +69,13 @@
         MKSI: q(205.08, 203.90),
         NOW: q(88.87, 89.50, 89.20),
         'BTC-USD': Object.assign(q(91250, 89900), { marketState: 'OPEN_24H', regularTime: now - 120 })
+      },
+      earnings: {
+        META: { date: addDays(66), estimate: true, source: 'demo' },
+        NVDA: { date: addDays(95), estimate: true, source: 'demo' },
+        AVGO: { date: addDays(11), estimate: false, source: 'demo' },
+        ORCL: { date: addDays(16), estimate: false, source: 'demo' },
+        NOW: { date: addDays(64), estimate: true, source: 'demo' }
       },
       warnings: []
     };

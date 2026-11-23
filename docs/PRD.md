@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Wersja** | 0.3 (zaktualizowany po wdrożeniu v1.2.0) |
+| **Wersja** | 0.4 (zaktualizowany po wdrożeniu v1.3.0) |
 | **Data** | 23.11.2026 |
-| **Status** | v1.2.0 zaimplementowana |
+| **Status** | v1.3.0 zaimplementowana |
 | **Bazuje na** | Prototyp „Struktura portfela akcyjnego — 20.11.2026” (HTML + SVG + Tailwind) |
 
 ---
@@ -76,6 +76,7 @@ flowchart LR
 - **Fallback:** automatyczna ukryta zakładka `_Kursy` z formułami `GOOGLEFINANCE()` (sesja regularna, opóźnienie do ~20 min).
 - **Cache** w `CacheService`: 60 s w godzinach notowań, 15 min gdy rynek zamknięty.
 - **Domyślne zachowanie pre/post:** wyłączone w obliczeniach na wykresie; kurs pre/post widoczny jako dodatkowa informacja w szczegółach, a przełącznik **Pre/Post** przełącza wycenę na rozszerzoną sesję.
+- **Najbliższe wyniki finansowe (earnings):** pobierane zbiorczo dla otwartych akcji przez Yahoo Finance (`v7/finance/quote` z sesyjnym cookie/crumb), z awaryjnym fallbackiem na publiczne API Nasdaq (`api.nasdaq.com/api/analyst/{SYMBOL}/earnings-date`); osobny cache 6h w `CacheService` (maks. TTL Apps Script). Gdy brak danych — pole po prostu się nie wyświetla i nigdy nie blokuje kursów.
 
 ---
 
@@ -112,7 +113,7 @@ Kolumny przygotowane pod przyszłe wersje: `Data rozliczenia` i `Kurs PLN (auto)
 
 ---
 
-## 6. Zakres funkcjonalny — stan aktualny (`v1.2.0`)
+## 6. Zakres funkcjonalny — stan aktualny (`v1.3.0`)
 
 ### Ekran główny
 - **Nagłówek:** nazwa portfela, status sesji + godzina kursów, przyciski **AI**, **Odśwież**, **Ustawienia**. Bez górnych kart KPI.
@@ -124,7 +125,7 @@ Kolumny przygotowane pod przyszłe wersje: `Data rozliczenia` i `Kurs PLN (auto)
   - W trybach `Open` i `All`: segmenty, etykiety ticker + %, pop-out, w środku wartość, wynik łączny (w `All` obejmujący otwarte + całkowicie zamknięte z rozbiciem `Open / Closed`) oraz zmiana dzienna.
   - W trybie `Closed`: zamiast koła czysta karta podsumowania **Realized P/L** (wynik USD i %, zainwestowany kapitał, przychód ze sprzedaży, bilans zysk/strata).
 - **Ujednolicona karta szczegółów pod wykresem:**
-  - Kliknięcie/tapnięcie wiersza na liście **tylko go podświetla** (bez dublowania treści w wierszu); pełne szczegóły (zarówno dla spółek, jak i kategorii, otwartych i zamkniętych) wyświetlają się w jednym miejscu — w karcie pod wykresem, w układzie z wartością, udziałem %, wynikiem % i zmianą dzienną + sekcją szczegółów pod kreską (w tym rozbiciem `Open / Realized` przy częściowych sprzedażach).
+  - Kliknięcie/tapnięcie wiersza na liście **tylko go podświetla** (bez dublowania treści w wierszu); pełne szczegóły (zarówno dla spółek, jak i kategorii, otwartych i zamkniętych) wyświetlają się w jednym miejscu — w karcie pod wykresem, w układzie z wartością, udziałem %, wynikiem % i zmianą dzienną + sekcją szczegółów pod kreską (w tym rozbiciem `Open / Realized` przy częściowych sprzedażach oraz **najbliższą datą wyników finansowych** z odliczaniem dni — wyróżnioną dla wyników w ciągu 14 dni).
   - Na mniejszych ekranach kliknięcie pozycji delikatnie przewija do karty szczegółów, jeśli jest poza widokiem.
 - **Lista pozycji / kategorii:** sortowanie (`value` / `P/L USD`, `P/L %`, `daily change`, `A–Z`); w trybie `All` pod otwartymi pozycjami pojawia się oddzielona sekcja zamkniętych pozycji.
 - **Uwagi z arkusza:** zwijana lista ostrzeżeń walidacji.
@@ -153,8 +154,8 @@ Kolumny przygotowane pod przyszłe wersje: `Data rozliczenia` i `Kurs PLN (auto)
 | **v1.0.3** | Ujednolicenie karty szczegółów pod wykresem (spółki + kategorie), usunięcie dublowania na liście, delikatne przewijanie na mobile. | Gotowe |
 | **v1.1.0** | Tryby `Open / All / Closed`, częściowe sprzedaże uwzględniane w wyniku otwartej pozycji, widok całkowicie zamkniętych pozycji i kategorii, zamknięte pozycje w eksporcie AI. | Gotowe |
 | **v1.2.0** | Przełącznik języka `EN / PL` w Ustawieniach (EN domyślny), lokalne formatowanie liczb i dat, dwujęzyczny eksport AI. | Gotowe |
-| **v1.3 — Najbliższe wyniki (Earnings)** | Pobieranie najbliższej daty publikacji wyników finansowych (Yahoo quote/crumb + fallback Nasdaq, cache 12–24h) i wyświetlanie jej w karcie szczegółów spółki oraz w eksporcie AI. | Następny krok |
-| **v1.4 — PLN i podatki** | Automatyczne pobieranie kursu średniego **NBP (tabela A)** z ostatniego dnia roboczego przed datą rozliczenia do kolumny `Kurs PLN (auto)`; przełącznik waluty **USD / PLN** (z bieżącym kursem `USDPLN=X`); wynik w PLN z różnicami kursowymi; opcja metody kosztu **FIFO** (pod PIT-38). | Planowane |
+| **v1.3 — Najbliższe wyniki (Earnings)** | Pobieranie najbliższej daty publikacji wyników finansowych (Yahoo quote/crumb + fallback Nasdaq, cache 6h) i wyświetlanie jej w karcie szczegółów spółki, tooltipie oraz w eksporcie AI. | Gotowe |
+| **v1.4 — PLN i podatki** | Automatyczne pobieranie kursu średniego **NBP (tabela A)** z ostatniego dnia roboczego przed datą rozliczenia do kolumny `Kurs PLN (auto)`; przełącznik waluty **USD / PLN** (z bieżącym kursem `USDPLN=X`); wynik w PLN z różnicami kursowymi; opcja metody kosztu **FIFO** (pod PIT-38). | Następny krok |
 | **v1.5 — Rynki spoza USA i wielowalutowość** | Obsługa spółek w PLN (GPW, np. `CDR.WA`), EUR (np. `SAP.DE`), GBP itp. — przeliczanie walut w locie, gotówka wielowalutowa. | Planowane |
 | **v2.x — Rozwój** | Wykres wartości portfela w czasie (dzienne snapshoty do zakładki `Historia`), dywidendy, porównanie z benchmarkiem (S&P 500 / Nasdaq), docelowe wagi i rebalancing, tryb ciemny, wiele kont/brokerów, opcjonalne logowanie Google OAuth. | Pomysły |
 
@@ -167,3 +168,4 @@ Kolumny przygotowane pod przyszłe wersje: `Data rozliczenia` i `Kurs PLN (auto)
 | 0.1 | 22.11.2026 | Pierwszy draft na bazie prototypu i wymagań użytkownika. |
 | 0.2 | 22.11.2026 | Zatwierdzony zakres v1.0: GitHub Pages, osobne zakładki `Akcje`/`Krypto`, domyślnie wyłączone pre/post, jeden broker, eksport AI, architektura zero-build. |
 | 0.3 | 23.11.2026 | Aktualizacja po v1.0.3–v1.2.0: ujednolicona karta szczegółów pod wykresem, tryby `Open / All / Closed` z częściowymi sprzedażami, dwujęzyczność `EN / PL` (EN domyślny) w Ustawieniach, plan najbliższych wyników (v1.3). |
+| 0.4 | 23.11.2026 | Aktualizacja po v1.2.1–v1.3.0: pionowy układ `Open / Closed` w środku koła, najbliższe daty wyników finansowych (Yahoo + fallback Nasdaq, cache 6h) w karcie szczegółów, tooltipie i eksporcie AI. |

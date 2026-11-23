@@ -10,7 +10,7 @@
  */
 
 const API_VERSION = 1;
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.3.0';
 
 const SHEETS = {
   START: 'Start',
@@ -101,16 +101,22 @@ function buildPortfolio_(opts) {
   instruments.forEach(function (i) { instrByTicker[i.ticker] = i; });
 
   const symbols = [];
+  const stockSymbols = [];
   Object.keys(net).forEach(function (ticker) {
     if (net[ticker] <= 1e-9) return;
-    const sym = quoteSymbol_(instrByTicker[ticker], ticker, transactions);
+    const instr = instrByTicker[ticker];
+    const sym = quoteSymbol_(instr, ticker, transactions);
     if (symbols.indexOf(sym) === -1) symbols.push(sym);
+    const cls = instr ? instr.assetClass : (transactions.some(function (t) { return t.ticker === ticker && t.assetClass === 'CRYPTO'; }) ? 'CRYPTO' : 'STOCK');
+    if (cls === 'STOCK' && stockSymbols.indexOf(sym) === -1) stockSymbols.push(sym);
   });
 
   const quotes = symbols.length ? getQuotes_(symbols, !!(opts && opts.fresh)) : {};
   symbols.forEach(function (s) {
     if (!quotes[s]) warnings.push({ level: 'warn', where: SHEETS.INSTRUMENTS, message: 'Brak kursu dla symbolu ' + s + ' — sprawdź kolumnę „Symbol notowań”.' });
   });
+
+  const earnings = stockSymbols.length ? getEarnings_(stockSymbols, !!(opts && opts.fresh)) : {};
 
   return {
     apiVersion: API_VERSION,
@@ -125,6 +131,7 @@ function buildPortfolio_(opts) {
     cash: cash,
     categories: categories,
     quotes: quotes,
+    earnings: earnings,
     warnings: warnings
   };
 }
@@ -480,6 +487,155 @@ function gfSymbol_(s) {
 }
 
 // ===========================================================================
+// 3b. NAJBLIŻSZE WYNIKI FINANSOWE (Yahoo quote + fallback Nasdaq, cache 6h)
+// ===========================================================================
+
+function getEarnings_(symbols, fresh) {
+  const result = {};
+  try {
+    const cache = CacheService.getScriptCache();
+    let missing = [];
+
+    if (!fresh) {
+      const cached = cache.getAll(symbols.map(function (s) { return 'e_' + s; }));
+      symbols.forEach(function (s) {
+        const c = cached['e_' + s];
+        if (c !== undefined && c !== null) {
+          const parsed = JSON.parse(c);
+          if (parsed) result[s] = parsed;
+        } else {
+          missing.push(s);
+        }
+      });
+    } else {
+      missing = symbols.slice();
+    }
+
+    if (missing.length) {
+      const fetched = fetchYahooEarnings_(missing);
+      const still = missing.filter(function (s) { return !fetched[s]; });
+      if (still.length) {
+        const ndq = fetchNasdaqEarnings_(still);
+        still.forEach(function (s) { if (ndq[s]) fetched[s] = ndq[s]; });
+      }
+      const toCache = {};
+      missing.forEach(function (s) {
+        const item = fetched[s] || null;
+        if (item) result[s] = item;
+        toCache['e_' + s] = JSON.stringify(item);
+      });
+      if (Object.keys(toCache).length) cache.putAll(toCache, 21600); // 6h (max TTL CacheService)
+    }
+  } catch (e) {
+    // Brak dat wyników nigdy nie blokuje głównej odpowiedzi API
+  }
+  return result;
+}
+
+function getYahooSession_() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get('yf_session');
+  if (cached) {
+    try { return JSON.parse(cached); } catch (e) { /* odśwież */ }
+  }
+  const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+  const r1 = UrlFetchApp.fetch('https://fc.yahoo.com', {
+    muteHttpExceptions: true,
+    followRedirects: false,
+    headers: { 'User-Agent': ua }
+  });
+  const hdrs = r1.getAllHeaders();
+  const rawCookies = hdrs['Set-Cookie'] || hdrs['set-cookie'];
+  if (!rawCookies) return null;
+  const arr = Array.isArray(rawCookies) ? rawCookies : [rawCookies];
+  const cookie = arr.map(function (c) { return String(c).split(';')[0]; }).join('; ');
+  if (!cookie) return null;
+
+  const r2 = UrlFetchApp.fetch('https://query1.finance.yahoo.com/v1/test/getcrumb', {
+    muteHttpExceptions: true,
+    headers: { 'User-Agent': ua, 'Cookie': cookie }
+  });
+  if (r2.getResponseCode() !== 200) return null;
+  const crumb = r2.getContentText().trim();
+  if (!crumb || crumb.length > 40) return null;
+
+  const sess = { cookie: cookie, crumb: crumb, ua: ua };
+  cache.put('yf_session', JSON.stringify(sess), 21600);
+  return sess;
+}
+
+function fetchYahooEarnings_(symbols) {
+  const out = {};
+  const sess = getYahooSession_();
+  if (!sess) return out;
+  const url = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols=' +
+    encodeURIComponent(symbols.join(',')) +
+    '&fields=earningsTimestamp,earningsTimestampStart,earningsTimestampEnd,isEarningsDateEstimate&crumb=' +
+    encodeURIComponent(sess.crumb);
+  const res = UrlFetchApp.fetch(url, {
+    muteHttpExceptions: true,
+    headers: { 'User-Agent': sess.ua, 'Cookie': sess.cookie }
+  });
+  if (res.getResponseCode() !== 200) return out;
+  const data = JSON.parse(res.getContentText());
+  const list = (data && data.quoteResponse && data.quoteResponse.result) || [];
+  const cutoff = Math.floor(Date.now() / 1000) - 86400; // włącznie z dzisiejszą datą
+
+  list.forEach(function (q) {
+    const candidates = [q.earningsTimestamp, q.earningsTimestampStart, q.earningsTimestampEnd]
+      .filter(function (t) { return typeof t === 'number' && isFinite(t) && t >= cutoff; })
+      .sort(function (a, b) { return a - b; });
+    if (!candidates.length) return;
+    const d = new Date(candidates[0] * 1000);
+    out[q.symbol] = {
+      date: Utilities.formatDate(d, 'America/New_York', 'yyyy-MM-dd'),
+      estimate: !!q.isEarningsDateEstimate,
+      source: 'yahoo'
+    };
+  });
+  return out;
+}
+
+function fetchNasdaqEarnings_(symbols) {
+  const out = {};
+  const reqs = symbols.map(function (s) {
+    return {
+      url: 'https://api.nasdaq.com/api/analyst/' + encodeURIComponent(s) + '/earnings-date',
+      muteHttpExceptions: true,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Origin': 'https://www.nasdaq.com',
+        'Referer': 'https://www.nasdaq.com/'
+      }
+    };
+  });
+  let responses;
+  try { responses = UrlFetchApp.fetchAll(reqs); } catch (e) { return out; }
+  const months = { Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06', Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12' };
+  const today = Utilities.formatDate(new Date(), 'America/New_York', 'yyyy-MM-dd');
+
+  responses.forEach(function (res, i) {
+    try {
+      if (res.getResponseCode() !== 200) return;
+      const data = JSON.parse(res.getContentText());
+      const ann = data && data.data && data.data.announcement;
+      if (!ann) return;
+      const m = /([A-Z][a-z]{2})\s+(\d{1,2}),\s*(\d{4})/.exec(ann);
+      if (!m || !months[m[1]]) return;
+      const iso = m[3] + '-' + months[m[1]] + '-' + ('0' + m[2]).slice(-2);
+      if (iso < today) return;
+      out[symbols[i]] = {
+        date: iso,
+        estimate: ann.indexOf('*') !== -1,
+        source: 'nasdaq'
+      };
+    } catch (e) { /* pomijamy pojedynczy symbol */ }
+  });
+  return out;
+}
+
+// ===========================================================================
 // 4. MENU I KONFIGURACJA ARKUSZA
 // ===========================================================================
 
@@ -722,10 +878,12 @@ function testQuotes() {
   const data = buildPortfolio_({ fresh: true });
   const lines = Object.keys(data.quotes).map(function (s) {
     const q = data.quotes[s];
+    const e = data.earnings && data.earnings[s];
     let ext = '';
     if (q.pre !== null) ext = ' | pre: ' + q.pre;
     if (q.post !== null) ext = ' | post: ' + q.post;
-    return s + ': ' + q.regular + ' ' + (q.currency || '') + ext + ' [' + q.source + ', ' + q.marketState + ']';
+    const earn = e ? ' | earnings: ' + e.date + (e.estimate ? ' (est.)' : '') : '';
+    return s + ': ' + q.regular + ' ' + (q.currency || '') + ext + earn + ' [' + q.source + ', ' + q.marketState + ']';
   });
   const warn = data.warnings.map(function (w) { return '⚠ ' + w.where + ': ' + w.message; });
   SpreadsheetApp.getUi().alert('Test kursów', (lines.join('\n') || 'Brak otwartych pozycji.') + (warn.length ? '\n\n' + warn.join('\n') : ''), SpreadsheetApp.getUi().ButtonSet.OK);

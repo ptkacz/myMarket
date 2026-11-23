@@ -2,7 +2,7 @@
 (function (MM) {
   'use strict';
 
-  const APP_VERSION = '1.2.1';
+  const APP_VERSION = '1.3.0';
   const KEY_PREFS = 'mm.prefs';
   const AUTO_REFRESH_MS = 60_000;
 
@@ -634,6 +634,16 @@
     return `${label}: ${f.price(p.extended.price, cur)}${diff}`;
   }
 
+  function earningsText(e) {
+    if (!e) return '';
+    const f = F();
+    const rel = e.daysUntil === 0
+      ? T('earningsToday')
+      : (e.daysUntil === 1 ? T('earningsTomorrow') : T('earningsInDays', { n: e.daysUntil }));
+    const est = e.estimate ? `, ${T('earningsEst')}` : '';
+    return `${e.estimate ? '~' : ''}${f.shortDate(e.date)} (${rel}${est})`;
+  }
+
   function rowExtraHtml(item, cur) {
     const f = F();
     if (item.kind === 'cash') {
@@ -680,6 +690,8 @@
     }
     const p = item.position;
     const ext = extendedInfo(p, cur);
+    const earn = earningsText(p.earnings);
+    const earnCls = p.earnings && p.earnings.daysUntil <= 14 ? 'font-semibold text-blue-700' : 'font-medium text-slate-700';
     const partial = p.hasPartialSales
       ? `<div class="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500 flex flex-wrap justify-between gap-2 tabular-nums">
           <span>${f.esc(T('lblOpenPnl'))}: <strong class="${f.gainClass(p.unrealizedPnl)}">${f.signedMoney(p.unrealizedPnl, cur)}</strong></span>
@@ -693,8 +705,9 @@
         <div><span class="text-slate-400 block">${f.esc(T('lblCost'))}</span><span class="font-semibold tabular-nums">${f.money(p.cost, cur)}</span></div>
         <div><span class="text-slate-400 block">${f.esc(T('lblPnl'))}</span><span class="font-bold tabular-nums ${f.gainClass(p.pnl)}">${f.signedMoney(p.pnl, cur)}</span></div>
       </div>${partial}
-      <div class="flex flex-wrap justify-between gap-2 mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+      <div class="flex flex-wrap justify-between gap-x-4 gap-y-1 mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
         <span>${f.esc(T('lblCategory'))}: <strong class="font-medium text-slate-700">${f.esc(p.category)}</strong></span>
+        ${earn ? `<span class="tabular-nums">${f.esc(T('lblEarnings'))}: <strong class="${earnCls}">${f.esc(earn)}</strong></span>` : ''}
         ${ext ? `<span class="font-medium text-amber-700 tabular-nums">${f.esc(ext)}</span>` : ''}
       </div>`;
   }
@@ -727,12 +740,14 @@
     } else {
       const p = item.position;
       const ext = extendedInfo(p, cur);
+      const earn = earningsText(p.earnings);
       body = `
         <div class="flex justify-between"><span class="text-slate-400">${f.esc(T('ttValue'))}</span><span class="font-semibold tabular-nums">${f.money(p.value, cur)}</span></div>
         <div class="flex justify-between"><span class="text-slate-400">${f.esc(T('ttQty'))}</span><span class="tabular-nums">${f.esc(T('qtyUnit', { n: f.qty(p.quantity) }))}</span></div>
         <div class="flex justify-between"><span class="text-slate-400">${f.esc(T('ttAvgBuy'))}</span><span class="tabular-nums">${f.price(p.avgCost, cur)}</span></div>
         <div class="flex justify-between"><span class="text-slate-400">${f.esc(T('ttSessionPrice'))}</span><span class="tabular-nums">${f.price(p.regularPrice ?? p.price, cur)}</span></div>
         ${ext ? `<div class="flex justify-between text-amber-300"><span>${f.esc(T('ttExtended'))}</span><span class="tabular-nums">${f.esc(ext.replace(/^[^:]+:\s*/, ''))}</span></div>` : ''}
+        ${earn ? `<div class="flex justify-between text-sky-300"><span>${f.esc(T('ttEarnings'))}</span><span class="tabular-nums text-right">${f.esc(earn)}</span></div>` : ''}
         <div class="flex justify-between"><span class="text-slate-400">${f.esc(T('ttCategory'))}</span><span class="text-slate-300 text-right">${f.esc(p.category)}</span></div>
         <div class="flex justify-between pt-1.5 mt-1 border-t border-slate-800"><span class="text-slate-400">${f.esc(T('ttPnl'))}</span><span class="font-bold tabular-nums ${f.gainClass(p.pnl, true)}">${f.signedMoney(p.pnl, cur)} (${f.signedPct(p.pnlPct)})</span></div>`;
     }

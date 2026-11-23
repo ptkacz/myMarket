@@ -87,6 +87,17 @@
 
     // --- 2. Wycena otwartych i budowa zamkniętych pozycji ---
     const quotes = payload.quotes || {};
+    const earningsMap = payload.earnings || {};
+    const todayMid = new Date();
+    todayMid.setHours(0, 0, 0, 0);
+    const parseEarnings = raw => {
+      if (!raw || !raw.date || !/^\d{4}-\d{2}-\d{2}$/.test(raw.date)) return null;
+      const [y, m, d] = raw.date.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      const daysUntil = Math.round((dt.getTime() - todayMid.getTime()) / 86400000);
+      if (daysUntil < 0) return null;
+      return { date: raw.date, estimate: !!raw.estimate, daysUntil, source: raw.source || null };
+    };
     const positions = [];
     const closed = [];
     const usedColors = new Set(Object.values(instr).map(i => i.color).filter(Boolean));
@@ -178,6 +189,7 @@
         regularPrice: q ? q.regular : null,
         previousClose: prevClose,
         extended: ext,
+        earnings: parseEarnings(earningsMap[symbol] || earningsMap[p.ticker]),
         marketState: q ? q.marketState : null,
         value,
         unrealizedPnl, unrealizedPct,
