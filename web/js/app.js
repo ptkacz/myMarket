@@ -2,7 +2,7 @@
 (function (MM) {
   'use strict';
 
-  const APP_VERSION = '1.3.3';
+  const APP_VERSION = '1.3.5';
   const KEY_PREFS = 'mm.prefs';
   const AUTO_REFRESH_MS = 60_000;
 
@@ -677,40 +677,50 @@
         </div>`;
     }
     if (item.kind === 'category') {
-      const partial = item.hasPartialSales
-        ? `<div class="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500 flex flex-wrap justify-between gap-2 tabular-nums">
-            <span>${f.esc(T('lblOpenPnl'))}: <strong class="${f.gainClass(item.unrealizedPnl)}">${f.signedMoney(item.unrealizedPnl, cur)}</strong></span>
-            <span>${f.esc(T('lblPartialRealizedCat'))}: <strong class="${f.gainClass(item.realized)}">${f.signedMoney(item.realized, cur)}</strong></span>
-          </div>`
-        : '';
+      const partialVal = item.hasPartialSales
+        ? `<strong class="${f.gainClass(item.realized)}">${f.signedMoney(item.realized, cur)}</strong>`
+        : '<strong class="font-medium text-slate-400">—</strong>';
       return `
         <div class="grid grid-cols-3 gap-2">
           <div><span class="text-slate-400 block">${f.esc(T('lblCost'))}</span><span class="font-semibold tabular-nums">${f.money(item.cost, cur)}</span></div>
           <div><span class="text-slate-400 block">${f.esc(T('lblPnl'))}</span><span class="font-bold tabular-nums ${f.gainClass(item.pnl)}">${f.signedMoney(item.pnl, cur)}</span></div>
           <div><span class="text-slate-400 block">${f.esc(T('lblToday'))}</span><span class="font-semibold tabular-nums ${f.gainClass(item.daily)}">${item.daily !== null ? f.signedMoney(item.daily, cur) : '—'}</span></div>
-        </div>${partial}`;
+        </div>
+        <div class="grid grid-cols-2 gap-x-4 mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500 tabular-nums">
+          <span class="truncate">${f.esc(T('lblOpenPnl'))}: <strong class="${f.gainClass(item.unrealizedPnl)}">${f.signedMoney(item.unrealizedPnl, cur)}</strong></span>
+          <span class="truncate text-right">${f.esc(T('lblPartialRealizedCat'))}: ${partialVal}</span>
+        </div>`;
     }
     const p = item.position;
     const ext = extendedInfo(p, cur);
-    const earn = earningsText(p.earnings);
+    const earn = !p.isCrypto ? earningsText(p.earnings) : '';
     const earnCls = p.earnings && p.earnings.daysUntil <= 14 ? 'font-semibold text-blue-700' : 'font-medium text-slate-700';
-    const partial = p.hasPartialSales
-      ? `<div class="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500 flex flex-wrap justify-between gap-2 tabular-nums">
-          <span>${f.esc(T('lblOpenPnl'))}: <strong class="${f.gainClass(p.unrealizedPnl)}">${f.signedMoney(p.unrealizedPnl, cur)}</strong></span>
-          <span>${f.esc(T('lblPartialRealized', { qty: f.qty(p.totalSoldQty) }))}: <strong class="${f.gainClass(p.realized)}">${f.signedMoney(p.realized, cur)}</strong></span>
-        </div>`
-      : '';
+    const earnVal = earn
+      ? `<strong class="${earnCls}">${f.esc(earn)}</strong>`
+      : '<strong class="font-medium text-slate-400">—</strong>';
+    const realizedHtml = p.hasPartialSales
+      ? `${f.esc(T('lblPartialRealized', { qty: f.qty(p.totalSoldQty) }))}: <strong class="${f.gainClass(p.realized)}">${f.signedMoney(p.realized, cur)}</strong>`
+      : `${f.esc(T('lblRealized'))}: <strong class="font-medium text-slate-400">—</strong>`;
+    const extHtml = ext
+      ? `<span class="font-medium text-amber-700 tabular-nums truncate">${f.esc(ext)}</span>`
+      : `<span class="text-slate-500 truncate">${f.esc(T('chipPrePost'))}: <strong class="font-medium text-slate-400">—</strong></span>`;
     return `
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <div><span class="text-slate-400 block">${f.esc(T('lblAvgBuy'))}</span><span class="font-semibold tabular-nums">${f.price(p.avgCost, cur)}</span></div>
         <div><span class="text-slate-400 block">${f.esc(T('lblPrice'))}${p.priceSource === 'pre' ? ' (pre)' : p.priceSource === 'post' ? ' (post)' : ''}</span><span class="font-semibold tabular-nums">${f.price(p.price, cur)}</span></div>
         <div><span class="text-slate-400 block">${f.esc(T('lblCost'))}</span><span class="font-semibold tabular-nums">${f.money(p.cost, cur)}</span></div>
         <div><span class="text-slate-400 block">${f.esc(T('lblPnl'))}</span><span class="font-bold tabular-nums ${f.gainClass(p.pnl)}">${f.signedMoney(p.pnl, cur)}</span></div>
-      </div>${partial}
-      <div class="flex flex-wrap justify-between gap-x-4 gap-y-1 mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
-        <span>${f.esc(T('lblCategory'))}: <strong class="font-medium text-slate-700">${f.esc(p.category)}</strong></span>
-        ${earn ? `<span class="tabular-nums">${f.esc(T('lblEarnings'))}: <strong class="${earnCls}">${f.esc(earn)}</strong></span>` : ''}
-        ${ext ? `<span class="font-medium text-amber-700 tabular-nums">${f.esc(ext)}</span>` : ''}
+      </div>
+      <div class="grid grid-cols-2 gap-x-4 mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500 tabular-nums">
+        <span class="truncate">${f.esc(T('lblOpenPnl'))}: <strong class="${f.gainClass(p.unrealizedPnl)}">${f.signedMoney(p.unrealizedPnl, cur)}</strong></span>
+        <span class="truncate text-right">${realizedHtml}</span>
+      </div>
+      <div class="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500 space-y-1">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+          <span class="truncate">${f.esc(T('lblCategory'))}: <strong class="font-medium text-slate-700">${f.esc(p.category)}</strong></span>
+          <span class="truncate sm:text-right tabular-nums">${f.esc(T('lblEarnings'))}: ${earnVal}</span>
+        </div>
+        <div class="flex items-center justify-between">${extHtml}</div>
       </div>`;
   }
 
@@ -719,13 +729,15 @@
     if (!item) {
       el.detailBanner.className = 'w-full mt-4 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4 transition-all';
       const hint = state.scope === 'closed' ? T('hintClosed') : T('hintDefault');
-      el.detailContent.innerHTML = `<div class="text-center text-xs text-slate-500">${f.esc(hint)}</div>`;
+      el.detailContent.className = 'text-center text-xs text-slate-500';
+      el.detailContent.innerHTML = f.esc(hint);
       return;
     }
     el.detailBanner.className = 'w-full mt-4 rounded-2xl ring-2 ring-slate-900 bg-white p-3.5 sm:p-4 shadow-sm transition-all';
+    el.detailContent.className = '';
     el.detailContent.innerHTML = `
       ${itemHeaderHtml(item, cur)}
-      <div class="mt-3 pt-2.5 border-t border-slate-100 text-xs">${rowExtraHtml(item, cur)}</div>`;
+      <div class="mt-2.5 pt-2.5 border-t border-slate-100 text-xs">${rowExtraHtml(item, cur)}</div>`;
   }
 
   function showTooltip(item, event) {

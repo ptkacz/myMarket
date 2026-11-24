@@ -1,5 +1,11 @@
 # Changelog — myMarket
 
+## [1.3.5] — 2026-11-24
+- Stały, jednolity układ karty szczegółów dla wszystkich pozycji (otwartych i kategorii): zawsze widoczne pola `Open`, `Realized` (z liczbą sprzedanych akcji lub `—`), `Category`, `Next earnings` (lub `—`) i `Pre/Post` (lub `—`) w równych kolumnach — gwarantuje `0 px` przeskoku wysokości między dowolnymi spółkami.
+
+## [1.3.4] — 2026-11-24
+- Stabilna wysokość karty szczegółów po zaznaczeniu pozycji (`min-h` + układ `justify-between`) oraz stałe pole `Next earnings: TBD / brak` dla akcji bez ogłoszonej daty wyników — eliminuje przeskakiwanie listy przy klikaniu po spółkach.
+
 ## [1.3.3] — 2026-11-24
 - Kompaktowa lista pozycji i kategorii: 2-liniowe wiersze (~52 px zamiast ~104 px) we wspólnej białej ramce z cienkimi liniami podziału i wyraźnym paskiem zaznaczenia z lewej, dzięki czemu bez przewijania widać ok. 2× więcej pozycji bez utraty czytelności.
 
