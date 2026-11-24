@@ -2,7 +2,7 @@
 (function (MM) {
   'use strict';
 
-  const APP_VERSION = '1.3.5';
+  const APP_VERSION = '1.3.6';
   const KEY_PREFS = 'mm.prefs';
   const AUTO_REFRESH_MS = 60_000;
 
@@ -447,7 +447,7 @@
   function scrollToDetailIfHidden() {
     const r = el.detailBanner.getBoundingClientRect();
     if (r.top < 12 || r.bottom > window.innerHeight - 12) {
-      el.detailBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.detailBanner.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
 
@@ -727,13 +727,13 @@
   function renderDetailBanner(item, cur) {
     const f = F();
     if (!item) {
-      el.detailBanner.className = 'w-full mt-4 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4 transition-all';
+      el.detailBanner.className = 'w-full mt-4 scroll-mt-3 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4 transition-all';
       const hint = state.scope === 'closed' ? T('hintClosed') : T('hintDefault');
       el.detailContent.className = 'text-center text-xs text-slate-500';
       el.detailContent.innerHTML = f.esc(hint);
       return;
     }
-    el.detailBanner.className = 'w-full mt-4 rounded-2xl ring-2 ring-slate-900 bg-white p-3.5 sm:p-4 shadow-sm transition-all';
+    el.detailBanner.className = 'w-full mt-4 scroll-mt-3 rounded-2xl ring-2 ring-slate-900 bg-white p-3.5 sm:p-4 shadow-sm transition-all';
     el.detailContent.className = '';
     el.detailContent.innerHTML = `
       ${itemHeaderHtml(item, cur)}

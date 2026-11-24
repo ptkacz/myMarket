@@ -1,5 +1,9 @@
 # Changelog — myMarket
 
+## [1.3.6] — 2026-11-24
+- Poprawiony kierunek obrotu ikony odświeżania (zgodny z grotami strzałek).
+- Poprawione przewijanie do karty szczegółów (`block: 'start'` + `scroll-mt-3`), dzięki czemu widok wraca dokładnie do górnej krawędzi karty szczegółów bez odsłaniania wykresu powyżej.
+
 ## [1.3.5] — 2026-11-24
 - Stały, jednolity układ karty szczegółów dla wszystkich pozycji (otwartych i kategorii): zawsze widoczne pola `Open`, `Realized` (z liczbą sprzedanych akcji lub `—`), `Category`, `Next earnings` (lub `—`) i `Pre/Post` (lub `—`) w równych kolumnach — gwarantuje `0 px` przeskoku wysokości między dowolnymi spółkami.
 
