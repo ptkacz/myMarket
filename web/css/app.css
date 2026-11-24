@@ -95,8 +95,8 @@ body {
 }
 .legend-row[data-dim="true"] { opacity: .55; }
 
-@keyframes spin { to { transform: rotate(-360deg); } }
-.spinning { animation: spin .9s linear infinite; }
+@keyframes mm-spin-ccw { to { transform: rotate(-360deg); } }
+.spinning { animation: mm-spin-ccw .9s linear infinite; }
 
 @keyframes shimmer { 0% { opacity: .55; } 50% { opacity: 1; } 100% { opacity: .55; } }
 .skeleton { animation: shimmer 1.4s ease-in-out infinite; background: rgb(241 245 249); border-radius: 1rem; }

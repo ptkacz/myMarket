@@ -1,5 +1,9 @@
 # Changelog — myMarket
 
+## [1.3.7] — 2026-11-24
+- Zmiana nazwy animacji na `mm-spin-ccw` w [web/css/app.css](../web/css/app.css), ponieważ Tailwind CDN nadpisywał globalne `@keyframes spin` kierunkiem w prawo.
+- Precyzyjne przewijanie `window.scrollTo` do dokładnie `12 px` nad górną krawędzią karty szczegółów (niezawodne w Safari iOS i Chrome).
+
 ## [1.3.6] — 2026-11-24
 - Poprawiony kierunek obrotu ikony odświeżania (zgodny z grotami strzałek).
 - Poprawione przewijanie do karty szczegółów (`block: 'start'` + `scroll-mt-3`), dzięki czemu widok wraca dokładnie do górnej krawędzi karty szczegółów bez odsłaniania wykresu powyżej.

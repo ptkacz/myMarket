@@ -2,7 +2,7 @@
 (function (MM) {
   'use strict';
 
-  const APP_VERSION = '1.3.6';
+  const APP_VERSION = '1.3.7';
   const KEY_PREFS = 'mm.prefs';
   const AUTO_REFRESH_MS = 60_000;
 
@@ -446,8 +446,10 @@
 
   function scrollToDetailIfHidden() {
     const r = el.detailBanner.getBoundingClientRect();
-    if (r.top < 12 || r.bottom > window.innerHeight - 12) {
-      el.detailBanner.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (r.top < 12) {
+      window.scrollTo({ top: Math.max(0, window.scrollY + r.top - 12), behavior: 'smooth' });
+    } else if (r.bottom > window.innerHeight - 12) {
+      window.scrollTo({ top: Math.max(0, window.scrollY + r.top - 12), behavior: 'smooth' });
     }
   }
 
