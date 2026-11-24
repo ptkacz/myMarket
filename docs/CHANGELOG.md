@@ -1,5 +1,8 @@
 # Changelog — myMarket
 
+## [1.3.3] — 2026-11-24
+- Kompaktowa lista pozycji i kategorii: 2-liniowe wiersze (~52 px zamiast ~104 px) we wspólnej białej ramce z cienkimi liniami podziału i wyraźnym paskiem zaznaczenia z lewej, dzięki czemu bez przewijania widać ok. 2× więcej pozycji bez utraty czytelności.
+
 ## [1.3.2] — 2026-11-24
 - Globalna zamiana etykiety waluty `USD` na kompaktowy symbol `$` (np. `$11,735.85`).
 - Poszerzony środek wykresu pierścieniowego (`OUTER_R = 188`, `INNER_R = 124`, z zachowaniem marginesów wokół koła) oraz dwuliniowy blok `TODAY` nad zmianą dzienną z pełną precyzją groszy, dzięki czemu wszystkie wartości mieszczą się czysto w kole również przy dużych kwotach.

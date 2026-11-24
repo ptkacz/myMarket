@@ -127,7 +127,7 @@ Kolumny przygotowane pod przyszłe wersje: `Data rozliczenia` i `Kurs PLN (auto)
 - **Ujednolicona karta szczegółów pod wykresem:**
   - Kliknięcie/tapnięcie wiersza na liście **tylko go podświetla** (bez dublowania treści w wierszu); pełne szczegóły (zarówno dla spółek, jak i kategorii, otwartych i zamkniętych) wyświetlają się w jednym miejscu — w karcie pod wykresem, w układzie z wartością, udziałem %, wynikiem % i zmianą dzienną + sekcją szczegółów pod kreską (w tym rozbiciem `Open / Realized` przy częściowych sprzedażach oraz **najbliższą datą wyników finansowych** z odliczaniem dni — wyróżnioną dla wyników w ciągu 14 dni).
   - Na mniejszych ekranach kliknięcie pozycji delikatnie przewija do karty szczegółów, jeśli jest poza widokiem.
-- **Lista pozycji / kategorii:** sortowanie (`value` / `P/L USD`, `P/L %`, `daily change`, `A–Z`); w trybie `All` pod otwartymi pozycjami pojawia się oddzielona sekcja zamkniętych pozycji.
+- **Lista pozycji / kategorii:** kompaktowe 2-liniowe wiersze we wspólnej białej ramce z cienkimi liniami podziału (ok. 2× więcej pozycji widocznych bez przewijania); sortowanie (`value` / `P/L USD`, `P/L %`, `daily change`, `A–Z`); w trybie `All` pod otwartymi pozycjami pojawia się oddzielona sekcja zamkniętych pozycji.
 - **Uwagi z arkusza:** zwijana lista ostrzeżeń walidacji.
 - **Tryb demo**, natychmiastowe ładowanie z lokalnego cache + auto-odświeżanie co 60 s w trakcie sesji.
 

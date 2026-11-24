@@ -2,7 +2,7 @@
 (function (MM) {
   'use strict';
 
-  const APP_VERSION = '1.3.2';
+  const APP_VERSION = '1.3.3';
   const KEY_PREFS = 'mm.prefs';
   const AUTO_REFRESH_MS = 60_000;
 
@@ -147,7 +147,7 @@
   function showSkeleton() {
     el.statusLine.textContent = T('loadingData');
     el.legendList.innerHTML = Array.from({ length: 5 }, () =>
-      '<div class="skeleton h-[68px] w-full"></div>'
+      '<div class="p-2.5"><div class="skeleton h-[34px] w-full"></div></div>'
     ).join('');
     el.closedSection.classList.add('hidden');
     el.centerEyebrow.textContent = T('loading');
@@ -383,41 +383,39 @@
     const f = F();
     if (isClosedItem(item)) {
       const tag = item.kind === 'closed-position'
-        ? `<span class="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 shrink-0">${f.esc(T('closedTag'))}</span>`
+        ? `<span class="text-[10px] font-semibold uppercase px-1.5 py-0 rounded bg-slate-100 text-slate-500 shrink-0">${f.esc(T('closedTag'))}</span>`
         : `<span class="text-[11px] font-medium text-slate-400 shrink-0">${f.esc(T('posCount', { n: item.positions.length }))}</span>`;
-      const badge = `<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-semibold border tabular-nums ${f.gainBadgeClass(item.pnlPct)}">${f.signedPct(item.pnlPct)}</span>`;
+      const badge = `<span class="inline-flex items-center px-1.5 py-0 leading-[18px] rounded text-[11px] font-semibold border tabular-nums ${f.gainBadgeClass(item.pnlPct)}">${f.signedPct(item.pnlPct)}</span>`;
       return `
-        <div class="flex items-center justify-between gap-3">
-          <div class="flex items-center gap-3 min-w-0">
-            <span class="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm ring-2 ring-white opacity-80" style="background-color:${f.esc(item.color)}"></span>
-            <div class="min-w-0">
-              <div class="flex items-center gap-1.5">
-                <span class="font-bold text-sm text-slate-900 truncate">${f.esc(item.label)}</span>
-                ${tag}
-              </div>
-              <div class="text-xs text-slate-500 truncate">${f.esc(item.subtitle)}</div>
+        <div class="space-y-0.5">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-2.5 h-2.5 rounded-full shrink-0 opacity-80" style="background-color:${f.esc(item.color)}"></span>
+              <span class="font-bold text-[13.5px] text-slate-900 truncate">${f.esc(item.label)}</span>
+              ${tag}
             </div>
-          </div>
-          <div class="text-right shrink-0">
-            <div class="font-bold text-sm tabular-nums ${f.gainClass(item.pnl)}">${f.signedMoney(item.pnl, cur)}</div>
-            <div class="flex items-center justify-end gap-1.5 mt-0.5">
-              <span class="text-[11px] text-slate-500 tabular-nums">${f.esc(T('costPrefix'))} ${f.money(item.cost, cur)}</span>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <span class="font-bold text-[13.5px] tabular-nums ${f.gainClass(item.pnl)}">${f.signedMoney(item.pnl, cur)}</span>
               ${badge}
             </div>
+          </div>
+          <div class="flex items-center justify-between gap-2 pl-[18px]">
+            <span class="text-[11.5px] text-slate-500 truncate">${f.esc(item.subtitle)}</span>
+            <span class="text-[11px] text-slate-400 shrink-0 tabular-nums">${f.esc(T('costPrefix'))} ${f.money(item.cost, cur)}</span>
           </div>
         </div>`;
     }
 
     const badge = item.kind === 'cash'
-      ? `<span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">${f.esc(T('reserveBadge'))}</span>`
-      : `<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-semibold border tabular-nums ${f.gainBadgeClass(item.pnlPct)}">${f.signedPct(item.pnlPct)}</span>`;
+      ? `<span class="text-[10.5px] font-medium px-1.5 py-0 leading-[18px] rounded bg-slate-100 text-slate-600">${f.esc(T('reserveBadge'))}</span>`
+      : `<span class="inline-flex items-center px-1.5 py-0 leading-[18px] rounded text-[11px] font-semibold border tabular-nums ${f.gainBadgeClass(item.pnlPct)}">${f.signedPct(item.pnlPct)}</span>`;
 
     const qtyBadge = item.kind === 'position'
       ? `<span class="text-[11px] font-medium text-slate-400 shrink-0 tabular-nums">${f.esc(T('qtyUnit', { n: f.qty(item.position.quantity) }))}</span>`
       : (item.kind === 'category' ? `<span class="text-[11px] font-medium text-slate-400 shrink-0">${f.esc(T('posCount', { n: item.positions.length }))}</span>` : '');
 
     const extTag = item.kind === 'position' && item.position.extended && state.usePrePost
-      ? `<span class="text-[10px] font-semibold uppercase px-1 py-0.5 rounded bg-amber-50 text-amber-700">${item.position.extended.type}</span>`
+      ? `<span class="text-[10px] font-semibold uppercase px-1 py-0 leading-[16px] rounded bg-amber-50 text-amber-700 shrink-0">${item.position.extended.type}</span>`
       : '';
 
     const dailyLine = item.dailyPct !== null
@@ -425,24 +423,23 @@
       : '';
 
     return `
-      <div class="flex items-center justify-between gap-3">
-        <div class="flex items-center gap-3 min-w-0">
-          <span class="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm ring-2 ring-white" style="background-color:${f.esc(item.color)}"></span>
-          <div class="min-w-0">
-            <div class="flex items-center gap-1.5">
-              <span class="font-bold text-sm text-slate-900 truncate">${f.esc(item.label)}</span>
-              ${qtyBadge}${extTag}
-            </div>
-            <div class="text-xs text-slate-500 truncate">${f.esc(item.subtitle)}</div>
+      <div class="space-y-0.5">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color:${f.esc(item.color)}"></span>
+            <span class="font-bold text-[13.5px] text-slate-900 truncate">${f.esc(item.label)}</span>
+            ${qtyBadge}${extTag}
+          </div>
+          <div class="flex items-baseline gap-1.5 shrink-0 tabular-nums">
+            <span class="font-bold text-[13.5px] text-slate-900">${f.money(item.value, cur)}</span>
+            <span class="text-[11.5px] font-semibold text-slate-500">${f.pct(item.sharePct, 1)}</span>
           </div>
         </div>
-        <div class="text-right shrink-0">
-          <div class="font-bold text-sm text-slate-900 tabular-nums">${f.money(item.value, cur)}</div>
-          <div class="flex items-center justify-end gap-1.5 mt-0.5">
-            <span class="text-xs font-semibold text-slate-600 tabular-nums">${f.pct(item.sharePct)}</span>
-            ${badge}
+        <div class="flex items-center justify-between gap-2 pl-[18px]">
+          <span class="text-[11.5px] text-slate-500 truncate">${f.esc(item.subtitle)}</span>
+          <div class="flex items-center gap-1.5 shrink-0">
+            ${badge}${dailyLine}
           </div>
-          ${dailyLine ? `<div class="mt-0.5">${dailyLine}</div>` : ''}
         </div>
       </div>`;
   }
@@ -456,7 +453,7 @@
 
   function createRowElement(item, cur) {
     const row = document.createElement('div');
-    row.className = 'legend-row rounded-2xl border border-slate-200/80 bg-white hover:border-slate-300 transition-all cursor-pointer p-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40';
+    row.className = 'legend-row hover:bg-slate-50/80 transition-colors cursor-pointer px-3 py-2 focus:outline-none focus-visible:bg-blue-50/50';
     row.dataset.id = item.id;
     row.setAttribute('role', 'button');
     row.setAttribute('tabindex', '0');
@@ -493,7 +490,7 @@
         : T('headingClosedCategories', { n: closedItems.length });
 
       if (!closedItems.length) {
-        el.legendList.innerHTML = `<div class="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">${f.esc(T('emptyClosed'))}</div>`;
+        el.legendList.innerHTML = `<div class="p-6 text-center text-sm text-slate-400">${f.esc(T('emptyClosed'))}</div>`;
         el.footerTotal.textContent = '';
         return;
       }
@@ -507,7 +504,7 @@
       : T('headingCategories', { n: items.length });
 
     if (!items.length) {
-      el.legendList.innerHTML = `<div class="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">${f.esc(T('emptyOpen'))}</div>`;
+      el.legendList.innerHTML = `<div class="p-6 text-center text-sm text-slate-400">${f.esc(T('emptyOpen'))}</div>`;
     } else {
       items.forEach(item => el.legendList.appendChild(createRowElement(item, cur)));
     }

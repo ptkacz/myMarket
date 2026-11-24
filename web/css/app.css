@@ -88,12 +88,12 @@ body {
 }
 .dlg::backdrop { background: rgba(15, 23, 42, .35); backdrop-filter: blur(3px); }
 
-/* Wiersz legendy — rozwinięte szczegóły */
+/* Wiersz legendy — podświetlenie we wspólnej ramce */
 .legend-row[data-active="true"] {
-  box-shadow: 0 0 0 2px rgb(15 23 42);
-  background: rgb(248 250 252);
+  box-shadow: inset 3px 0 0 rgb(15 23 42);
+  background: rgb(241 245 249 / 0.85);
 }
-.legend-row[data-dim="true"] { opacity: .6; }
+.legend-row[data-dim="true"] { opacity: .55; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 .spinning { animation: spin .9s linear infinite; }
