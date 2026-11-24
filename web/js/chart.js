@@ -3,7 +3,7 @@
   'use strict';
 
   const NS = 'http://www.w3.org/2000/svg';
-  const CX = 210, CY = 210, OUTER_R = 178, INNER_R = 112;
+  const CX = 210, CY = 210, OUTER_R = 188, INNER_R = 124;
 
   function polar(r, angle) {
     const rad = ((angle - 90) * Math.PI) / 180;

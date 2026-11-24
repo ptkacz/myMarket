@@ -21,8 +21,20 @@
 
   function sign(n, d) { return isNum(n) && Number(n.toFixed(d)) > 0 ? '+' : ''; }
 
-  function money(n, cur = 'USD', d = 2) { return isNum(n) ? `${num(n, d)}${NBSP}${cur}` : '—'; }
-  function signedMoney(n, cur = 'USD', d = 2) { return isNum(n) ? sign(n, d) + money(n, cur, d) : '—'; }
+  function money(n, cur = 'USD', d = 2) {
+    if (!isNum(n)) return '—';
+    const abs = num(Math.abs(n), d);
+    const neg = n < 0 && Number(Math.abs(n).toFixed(d)) !== 0;
+    const negSign = neg ? '-' : '';
+    if (cur === 'USD') return `${negSign}$${abs}`;
+    return `${negSign}${abs}${NBSP}${cur}`;
+  }
+
+  function signedMoney(n, cur = 'USD', d = 2) {
+    if (!isNum(n)) return '—';
+    const pos = Number(n.toFixed(d)) > 0 ? '+' : '';
+    return pos + money(n, cur, d);
+  }
   function pct(n, d = 2) { return isNum(n) ? `${num(n, d)}%` : '—'; }
   function signedPct(n, d = 2) { return isNum(n) ? sign(n, d) + pct(n, d) : '—'; }
 

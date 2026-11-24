@@ -1,5 +1,9 @@
 # Changelog — myMarket
 
+## [1.3.2] — 2026-11-24
+- Globalna zamiana etykiety waluty `USD` na kompaktowy symbol `$` (np. `$11,735.85`).
+- Poszerzony środek wykresu pierścieniowego (`OUTER_R = 188`, `INNER_R = 124`, z zachowaniem marginesów wokół koła) oraz dwuliniowy blok `TODAY` nad zmianą dzienną z pełną precyzją groszy, dzięki czemu wszystkie wartości mieszczą się czysto w kole również przy dużych kwotach.
+
 ## [1.3.1] — 2026-11-23
 - Usunięto fallback na `api.nasdaq.com` w [apps-script/Code.gs](../apps-script/Code.gs) (serwery Nasdaq zawieszały połączenia z Google Apps Script) — daty wyników pobierane są teraz wyłącznie szybko przez Yahoo Finance.
 - Dodano 25-sekundowy timeout w [web/js/api.js](../web/js/api.js), dzięki czemu ikona odświeżania nigdy nie zawiesza się w nieskończoność.

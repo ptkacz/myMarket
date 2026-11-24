@@ -2,7 +2,7 @@
 (function (MM) {
   'use strict';
 
-  const APP_VERSION = '1.3.1';
+  const APP_VERSION = '1.3.2';
   const KEY_PREFS = 'mm.prefs';
   const AUTO_REFRESH_MS = 60_000;
 
@@ -588,6 +588,13 @@
         el.centerEyebrow.textContent = state.viewData.eyebrow;
         el.centerPrimary.textContent = f.money(state.viewData.total, cur);
 
+        const renderTodayBlock = () => {
+          el.centerTertiary.innerHTML =
+            `<span class="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">${f.esc(T('lblToday'))}</span>` +
+            `<span class="block font-semibold ${f.gainClass(s.daily)}">${f.signedMoney(s.daily, cur)} (${f.signedPct(s.dailyPct)})</span>`;
+          el.centerTertiary.className = 'text-[11px] mt-1.5 tabular-nums leading-tight space-y-0.5';
+        };
+
         if (state.scope === 'all') {
           if (s.allCost > 0) {
             el.centerSecondary.textContent = `${f.signedMoney(s.allPnl, cur)} (${f.signedPct(s.allPnlPct)})`;
@@ -597,12 +604,11 @@
           }
           if (s.closedCount > 0) {
             el.centerTertiary.innerHTML =
-              `<span class="block">${f.esc(T('openShort'))} <strong class="font-semibold ${f.gainClass(s.pnl)}">${f.signedMoney(s.pnl, cur, 0)}</strong></span>` +
-              `<span class="block">${f.esc(T('closedShort'))} <strong class="font-semibold ${f.gainClass(s.closedPnl)}">${f.signedMoney(s.closedPnl, cur, 0)}</strong></span>`;
-            el.centerTertiary.className = 'text-[10.5px] sm:text-[11px] font-medium text-slate-400 mt-1 tabular-nums leading-tight space-y-0.5';
+              `<span class="block">${f.esc(T('openShort'))} <strong class="font-semibold ${f.gainClass(s.pnl)}">${f.signedMoney(s.pnl, cur)}</strong></span>` +
+              `<span class="block">${f.esc(T('closedShort'))} <strong class="font-semibold ${f.gainClass(s.closedPnl)}">${f.signedMoney(s.closedPnl, cur)}</strong></span>`;
+            el.centerTertiary.className = 'text-[10.5px] sm:text-[11px] font-medium text-slate-400 mt-1.5 tabular-nums leading-tight space-y-0.5';
           } else if (s.daily !== null) {
-            el.centerTertiary.textContent = `${T('todayPrefix')} ${f.signedMoney(s.daily, cur)} (${f.signedPct(s.dailyPct)})`;
-            el.centerTertiary.className = `text-[11px] font-medium mt-0.5 tabular-nums ${f.gainClass(s.daily)}`;
+            renderTodayBlock();
           } else {
             el.centerTertiary.textContent = '';
           }
@@ -614,8 +620,7 @@
             el.centerSecondary.textContent = '';
           }
           if (s.daily !== null) {
-            el.centerTertiary.textContent = `${T('todayPrefix')} ${f.signedMoney(s.daily, cur)} (${f.signedPct(s.dailyPct)})`;
-            el.centerTertiary.className = `text-[11px] font-medium mt-0.5 tabular-nums ${f.gainClass(s.daily)}`;
+            renderTodayBlock();
           } else {
             el.centerTertiary.textContent = '';
           }

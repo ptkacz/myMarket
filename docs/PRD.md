@@ -133,7 +133,7 @@ Kolumny przygotowane pod przyszłe wersje: `Data rozliczenia` i `Kurs PLN (auto)
 
 ### Język i formatowanie (`web/js/i18n.js`, `web/js/format.js`)
 - **Domyślny język: angielski (`EN`)**, przełącznik **`English | Polski`** w Ustawieniach (zapisywany w `localStorage`).
-- Formatowanie liczb i dat automatycznie dopasowane do wybranego języka (`10,823.35 USD` w EN vs `10 823,35 USD` w PL).
+- Formatowanie liczb i dat automatycznie dopasowane do wybranego języka (`$10,823.35` w EN vs `$10 823,35` w PL).
 - Nazwy spółek i kategorii pochodzą bezpośrednio z Arkusza Google użytkownika.
 
 ### Eksport dla AI (`web/js/ai-export.js`)
