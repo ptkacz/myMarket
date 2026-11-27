@@ -2,7 +2,7 @@
 (function (MM) {
   'use strict';
 
-  const APP_VERSION = '1.4.5';
+  const APP_VERSION = '1.5.0';
   const KEY_PREFS = 'mm.prefs';
   const AUTO_REFRESH_MS = 60_000;
 

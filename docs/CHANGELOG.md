@@ -1,5 +1,11 @@
 # Changelog — myMarket
 
+## [1.5.0] — 2026-11-27
+- **Standaryzacja Arkusza Google na język angielski ([apps-script/Code.gs](../apps-script/Code.gs)):**
+  - Nowy standard nazw zakładek (`Stocks`, `Crypto`, `Watchlist`, `Instruments`, `Categories`, `Cash`, `Settings`), angielskich nagłówków, menu `myMarket` oraz wartości (`BUY`/`SELL`, `Stock`/`ETF`/`Crypto`).
+  - Pełna niedestrukcyjna migracja w `1. Setup sheet`: automatycznie przemianowuje istniejące polskie zakładki, tłumaczy nagłówki, zamienia wartości `KUPNO`/`SPRZEDAŻ` → `BUY`/`SELL` i `Akcja`/`Krypto` → `Stock`/`Crypto`, a także usuwa nieużywaną kolumnę `Aktywny` z `Instruments` bez naruszania żadnych danych.
+  - Dodana rozwijana lista dla kolumny `Category` w `Instruments` zasilana z zakładki `Categories`.
+
 ## [1.4.4] — 2026-11-27
 - Przycisk **Reload app / Przeładuj aplikację** w Ustawieniach — wymusza pobranie najnowszej wersji aplikacji z pominięciem 10-minutowego cache GitHub Pages (szczególnie przydatne w ikonie PWA na iPhonie).
 

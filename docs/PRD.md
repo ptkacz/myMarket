@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Wersja** | 0.5 (zaktualizowany po wdrożeniu v1.4.0) |
+| **Wersja** | 0.6 (zaktualizowany po wdrożeniu v1.5.0) |
 | **Data** | 27.11.2026 |
-| **Status** | v1.4.0 zaimplementowana |
+| **Status** | v1.5.0 zaimplementowana |
 | **Bazuje na** | Prototyp „Struktura portfela akcyjnego — 20.11.2026” (HTML + SVG + Tailwind) |
 
 ---
@@ -87,15 +87,15 @@ Jeden broker (bez kolumny konta w v1). **Akcje i krypto są rozdzielone na dwie 
 
 | Zakładka | Rola |
 |---|---|
-| `Start` | Krótka instrukcja obsługi i wdrożenia |
-| `Akcje` | Transakcje akcji i ETF (`Data transakcji`, `Data rozliczenia`, `Typ`, `Ticker`, `Ilość`, `Cena`, `Waluta`, `Prowizja`, `Kurs PLN (auto)`, `Notatka`) |
-| `Krypto` | Transakcje kryptowalut (np. `BTC`) — te same kolumny co `Akcje`, wsparcie ilości ułamkowych |
-| `Watchlist` | Obserwowane spółki i krypto z progami cenowymi: `Ticker` (lista rozwijana z `Instrumenty`), `Kup ≤`, `Sprzedaj ≥`, `Notatka` (nazwa i kategoria zaciągane automatycznie z `Instrumenty`) |
-| `Instrumenty` | Słownik: `Ticker`, `Nazwa`, `Kategoria` (steruje widokiem „By category / Wg kategorii”), `Klasa aktywa` (`Akcja`/`ETF`/`Krypto`), `Symbol notowań`, `Waluta`, `Kolor`, `Aktywny` |
-| `Kategorie` | Opcjonalnie przypisanie kolorów do kategorii |
-| `Gotówka` | Ręcznie wpisywane saldo (`Waluta`, `Saldo`, `Opis`) |
-| `Ustawienia` | Nazwa portfela, waluta bazowa, adres frontendu, adres API |
-| `_Kursy` | Ukryta, tworzona automatycznie tylko w razie fallbacku na `GOOGLEFINANCE` |
+| `Start` | Krótka instrukcja obsługi i wdrożenia (po angielsku) |
+| `Stocks` | Transakcje akcji i ETF (`Trade Date`, `Settle Date`, `Type` (`BUY`/`SELL`), `Ticker` z `Instruments`, `Quantity`, `Price`, `Currency`, `Fee`, `FX PLN (auto)`, `Note`) |
+| `Crypto` | Transakcje kryptowalut (np. `BTC`) — te same kolumny co `Stocks`, wsparcie ilości ułamkowych |
+| `Watchlist` | Obserwowane spółki i krypto: `Ticker` (lista rozwijana z `Instruments`), `Buy ≤`, `Sell ≥`, `Note` (nazwa i kategoria zaciągane automatycznie z `Instruments`) |
+| `Instruments` | Słownik: `Ticker`, `Name`, `Category` (lista rozwijana z `Categories`), `Asset Class` (`Stock`/`ETF`/`Crypto`), `Quote Symbol`, `Currency`, `Color` |
+| `Categories` | Nazwy kategorii i opcjonalne kolory `#HEX` dla widoku `By category` |
+| `Cash` | Ręcznie wpisywane saldo (`Currency`, `Balance`, `Description`) |
+| `Settings` | Nazwa portfela, waluta bazowa, adres frontendu, adres API |
+| `_Quotes` | Ukryta, tworzona automatycznie tylko w razie fallbacku na `GOOGLEFINANCE` |
 
 Kolumny przygotowane pod przyszłe wersje: `Data rozliczenia` i `Kurs PLN (auto)` (PLN / NBP), `Waluta` (rynki spoza USA).
 
