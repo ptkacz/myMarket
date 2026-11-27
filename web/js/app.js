@@ -2,7 +2,7 @@
 (function (MM) {
   'use strict';
 
-  const APP_VERSION = '1.4.3';
+  const APP_VERSION = '1.4.4';
   const KEY_PREFS = 'mm.prefs';
   const AUTO_REFRESH_MS = 60_000;
 
@@ -124,6 +124,7 @@
     btnLangEn: $('btn-lang-en'),
     btnLangPl: $('btn-lang-pl'),
     btnSaveConfig: $('btn-save-config'),
+    btnReloadApp: $('btn-reload-app'),
     btnDemo: $('btn-demo'),
     btnDisconnect: $('btn-disconnect'),
     dlgAi: $('dlg-ai'),
@@ -1186,6 +1187,9 @@
       refresh({ fresh: true });
     });
 
+    el.btnReloadApp.addEventListener('click', () => {
+      location.replace(`${location.pathname}?r=${Date.now()}`);
+    });
     el.btnDemo.addEventListener('click', () => { el.dlgSettings.close(); enterDemo(); });
     el.btnDisconnect.addEventListener('click', () => {
       if (!confirm(T('confirmDisconnect'))) return;
@@ -1237,6 +1241,11 @@
     el.appVersion.textContent = APP_VERSION;
     applyStaticTranslations();
     bindEvents();
+
+    // Wyczyść jednorazowy parametr ?r= po ręcznym przeładowaniu aplikacji
+    if (location.search && new URLSearchParams(location.search).has('r')) {
+      history.replaceState(null, '', location.pathname + location.hash);
+    }
 
     // Jednorazowe podłączenie z linku QR (#connect?api=...&token=...)
     const fromHash = MM.api.configFromHash();

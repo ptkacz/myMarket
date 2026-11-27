@@ -1,5 +1,8 @@
 # Changelog — myMarket
 
+## [1.4.4] — 2026-11-27
+- Przycisk **Reload app / Przeładuj aplikację** w Ustawieniach — wymusza pobranie najnowszej wersji aplikacji z pominięciem 10-minutowego cache GitHub Pages (szczególnie przydatne w ikonie PWA na iPhonie).
+
 ## [1.4.3] — 2026-11-27
 - Obniżone progi widoczności symboli `$` i `₿` na wykresie w [web/js/chart.js](../web/js/chart.js): sam symbol wyświetla się już od `1.2%` udziału (z dopasowanym rozmiarem czcionki), a symbol z procentem od `4.5%`.
 
