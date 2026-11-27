@@ -82,10 +82,10 @@
 
       // List & sort
       sortLabel: 'Sort:',
-      sortValue: 'value',
+      sortValue: 'Value',
       sortPnlUsd: 'P/L USD',
       sortPnlPct: 'P/L %',
-      sortDaily: 'daily change',
+      sortDaily: 'Daily change',
       sortName: 'A–Z',
       headingPositions: 'Positions ({n})',
       headingCategories: 'Categories ({n})',
@@ -202,8 +202,8 @@
       // Watchlist
       watchTitle: '{n} tickers',
       watchHitsSummary: '{n} target hit',
-      watchSortStatus: 'status',
-      watchSortDist: 'distance',
+      watchSortStatus: 'Status',
+      watchSortDist: 'Distance',
       watchEmptyTitle: 'Your watchlist is empty.',
       watchEmptyHint: 'Run myMarket → 1. Przygotuj arkusz in Google Sheets to add the "Watchlist" tab, then add tickers with Buy ≤ / Sell ≥ target prices.',
       watchHintSelect: 'Tap a ticker in the list to view targets, earnings, and notes.',
@@ -303,10 +303,10 @@
 
       // List & sort
       sortLabel: 'Sortuj:',
-      sortValue: 'wartość',
-      sortPnlUsd: 'wynik USD',
-      sortPnlPct: 'wynik %',
-      sortDaily: 'zmiana dzienna',
+      sortValue: 'Wartość',
+      sortPnlUsd: 'Wynik USD',
+      sortPnlPct: 'Wynik %',
+      sortDaily: 'Zmiana dzienna',
       sortName: 'A–Z',
       headingPositions: 'Pozycje ({n})',
       headingCategories: 'Kategorie ({n})',
@@ -423,8 +423,8 @@
       // Watchlist
       watchTitle: 'Obserwowane: {n}',
       watchHitsSummary: 'Cel osiągnięty: {n}',
-      watchSortStatus: 'status',
-      watchSortDist: 'dystans',
+      watchSortStatus: 'Status',
+      watchSortDist: 'Dystans',
       watchEmptyTitle: 'Twoja lista obserwacyjna jest pusta.',
       watchEmptyHint: 'Uruchom w Arkuszu Google myMarket → 1. Przygotuj arkusz, aby dodać zakładkę „Watchlist”, a następnie wpisz tickery i progi Kup ≤ / Sprzedaj ≥.',
       watchHintSelect: 'Dotknij spółki na liście, aby zobaczyć progi cenowe, wyniki i notatkę.',
