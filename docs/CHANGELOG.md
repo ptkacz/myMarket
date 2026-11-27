@@ -1,5 +1,11 @@
 # Changelog — myMarket
 
+## [1.4.1] — 2026-11-27
+- Odchudzenie i oczyszczenie UI:
+  - Nagłówek zastąpiony ikoną aplikacji + tytułem **`myMarket`** (usunięta niebieska kapsułka i napis `Portfolio structure`), skrócony wiersz statusu (`● After-hours · 20:15`, bez zdublowanej kapsułki `with Pre/Post`).
+  - Usunięte wszystkie podpowiedzi (`Hover / Tap…`) oraz dolny pasek `Total` pod listą — karta szczegółów (w Portfelu, Zamkniętych i Watchliście) jest ukryta dopóki nic nie jest wybrane.
+  - Usunięta etykieta `Sort:` oraz zdublowany nagłówek `Watchlist` (zastąpiony zgrabnym licznikiem pozycji).
+
 ## [1.4.0] — 2026-11-27
 - **Watchlist z progami cenowymi (`Kup ≤` / `Sprzedaj ≥`):**
   - Backend ([apps-script/Code.gs](../apps-script/Code.gs)): nowa, uproszczona zakładka `Watchlist` (`Ticker` z listą rozwijaną z `Instrumenty`, `Kup ≤`, `Sprzedaj ≥`, `Notatka` — nazwa i kategoria zaciągane ze słownika `Instrumenty`) dodawana selektywnie przez `1. Przygotuj arkusz` (automatycznie usuwa wycofane kolumny `Nazwa` i `Kategoria` bez naruszania pozostałych danych); wspólne pobieranie kursów (z Pre/Post) i dat wyników z deduplikacją symboli.

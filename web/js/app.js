@@ -2,7 +2,7 @@
 (function (MM) {
   'use strict';
 
-  const APP_VERSION = '1.4.0';
+  const APP_VERSION = '1.4.1';
   const KEY_PREFS = 'mm.prefs';
   const AUTO_REFRESH_MS = 60_000;
 
@@ -69,7 +69,6 @@
 
   // Referencje DOM
   const el = {
-    portfolioName: $('portfolio-name'),
     statusLine: $('status-line'),
     notice: $('notice'),
     navPortfolio: $('nav-portfolio'),
@@ -81,6 +80,8 @@
     watchHitsPill: $('watch-hits-pill'),
     watchChipPrePost: $('watch-chip-prepost'),
     watchSort: $('watch-sort'),
+    watchDetailCol: $('watch-detail-col'),
+    watchListCol: $('watch-list-col'),
     watchDetail: $('watch-detail'),
     watchDetailContent: $('watch-detail-content'),
     watchList: $('watch-list'),
@@ -113,8 +114,6 @@
     closedHeading: $('closed-heading'),
     closedList: $('closed-list'),
     warnings: $('warnings'),
-    footerNote: $('footer-note'),
-    footerTotal: $('footer-total'),
     appVersion: $('app-version'),
     tooltip: $('floating-tooltip'),
     dlgSettings: $('dlg-settings'),
@@ -261,16 +260,12 @@
   function renderHeader() {
     const r = state.computed;
     const f = F();
-    el.portfolioName.textContent = r.portfolioName;
-    document.title = `${r.portfolioName} — myMarket`;
+    document.title = 'myMarket';
 
     const badge = marketBadge(r);
     const parts = [badge];
     if (r.market.fetchedAt && !state.isDemo) {
-      parts.push(`<span>${f.esc(T('quotesAt'))} <strong class="font-medium text-slate-700">${f.time(r.market.fetchedAt)}</strong></span>`);
-    }
-    if (state.usePrePost && ((state.view === 'portfolio' && r.anyExtended && state.scope !== 'closed') || (state.view === 'watchlist' && r.watchlistAnyExtended))) {
-      parts.push(`<span class="px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/80 text-[11px] font-semibold">${f.esc(T('withPrePost'))}</span>`);
+      parts.push(`<strong class="font-medium text-slate-600 tabular-nums">${f.time(r.market.fetchedAt)}</strong>`);
     }
     if (r.market.source === 'googlefinance') {
       parts.push(`<span class="text-amber-700">${f.esc(T('gfFallback'))}</span>`);
@@ -531,11 +526,9 @@
 
       if (!closedItems.length) {
         el.legendList.innerHTML = `<div class="p-6 text-center text-sm text-slate-400">${f.esc(T('emptyClosed'))}</div>`;
-        el.footerTotal.textContent = '';
         return;
       }
       closedItems.forEach(item => el.legendList.appendChild(createRowElement(item, cur)));
-      el.footerTotal.textContent = T('footerClosed', { p: f.signedMoney(s.closedPnl, cur), pct: f.signedPct(s.closedPnlPct) });
       return;
     }
 
@@ -555,10 +548,8 @@
         ? T('headingClosedPositions', { n: closedItems.length })
         : T('headingClosedCategories', { n: closedItems.length });
       closedItems.forEach(item => el.closedList.appendChild(createRowElement(item, cur)));
-      el.footerTotal.textContent = T('footerAll', { v: f.money(total, cur), p: f.signedMoney(s.allPnl, cur) });
     } else {
       el.closedSection.classList.add('hidden');
-      el.footerTotal.textContent = items.length ? T('footerTotal', { v: f.money(total, cur) }) : '';
     }
   }
 
@@ -765,12 +756,9 @@
   }
 
   function renderDetailBanner(item, cur) {
-    const f = F();
     if (!item) {
-      el.detailBanner.className = 'w-full mt-4 scroll-mt-3 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4 transition-all';
-      const hint = state.scope === 'closed' ? T('hintClosed') : T('hintDefault');
-      el.detailContent.className = 'text-center text-xs text-slate-500';
-      el.detailContent.innerHTML = f.esc(hint);
+      el.detailBanner.className = 'hidden';
+      el.detailContent.innerHTML = '';
       return;
     }
     el.detailBanner.className = 'w-full mt-4 scroll-mt-3 rounded-2xl ring-2 ring-slate-900 bg-white p-3.5 sm:p-4 shadow-sm transition-all';
@@ -927,7 +915,8 @@
 
     el.watchList.innerHTML = '';
     if (!sorted.length) {
-      el.watchDetail.classList.add('hidden');
+      el.watchDetailCol.classList.add('hidden');
+      el.watchListCol.className = 'lg:col-span-12 flex flex-col';
       el.watchList.innerHTML = `
         <div class="p-6 text-center space-y-1.5">
           <div class="text-sm font-semibold text-slate-600">${f.esc(T('watchEmptyTitle'))}</div>
@@ -936,7 +925,6 @@
       return;
     }
 
-    el.watchDetail.classList.remove('hidden');
     sorted.forEach(w => {
       const row = document.createElement('div');
       row.className = 'watch-row hover:bg-slate-50/80 transition-colors cursor-pointer px-3 py-2 focus:outline-none focus-visible:bg-blue-50/50';
@@ -987,11 +975,13 @@
   function renderWatchDetail(w, cur) {
     const f = F();
     if (!w) {
-      el.watchDetail.className = 'w-full scroll-mt-3 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4 transition-all';
-      el.watchDetailContent.className = 'text-center text-xs text-slate-500';
-      el.watchDetailContent.innerHTML = f.esc(T('watchHintSelect'));
+      el.watchDetailCol.classList.add('hidden');
+      el.watchListCol.className = 'lg:col-span-12 flex flex-col';
+      el.watchDetailContent.innerHTML = '';
       return;
     }
+    el.watchDetailCol.classList.remove('hidden');
+    el.watchListCol.className = 'lg:col-span-7 flex flex-col';
 
     const ext = extendedInfo(w, cur);
     const earn = !w.isCrypto ? earningsText(w.earnings) : '';

@@ -199,7 +199,7 @@
       demoPortfolioName: 'Demo portfolio',
 
       // Watchlist
-      watchTitle: 'Watchlist ({n})',
+      watchTitle: '{n} tickers',
       watchHitsSummary: '{n} target hit',
       watchSortStatus: 'status',
       watchSortDist: 'distance',
@@ -419,7 +419,7 @@
       demoPortfolioName: 'Portfel demo',
 
       // Watchlist
-      watchTitle: 'Watchlist ({n})',
+      watchTitle: 'Obserwowane: {n}',
       watchHitsSummary: 'Cel osiągnięty: {n}',
       watchSortStatus: 'status',
       watchSortDist: 'dystans',

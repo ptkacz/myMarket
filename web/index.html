@@ -18,21 +18,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/app.css?v=1.4.0" />
+  <link rel="stylesheet" href="css/app.css?v=1.4.1" />
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen antialiased selection:bg-blue-100 selection:text-blue-900">
 
   <div class="safe-area max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
 
     <!-- Header -->
-    <header class="flex items-start justify-between gap-3 mb-4 sm:mb-6">
+    <header class="flex items-start justify-between gap-3 mb-4 sm:mb-5">
       <div class="min-w-0">
-        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-[11px] font-semibold tracking-wide uppercase mb-2 max-w-full">
-          <span class="w-2 h-2 rounded-full bg-blue-600 shrink-0"></span>
-          <span id="portfolio-name" class="truncate">myMarket</span>
+        <div class="flex items-center gap-2.5">
+          <img src="icons/icon.svg" alt="" class="w-7 h-7 rounded-lg shrink-0 shadow-sm" />
+          <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">myMarket</h1>
         </div>
-        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900" data-i18n="pageTitle">Portfolio structure</h1>
-        <p id="status-line" class="text-xs sm:text-sm text-slate-500 mt-1 flex items-center gap-1.5 flex-wrap" data-i18n="loading">Loading…</p>
+        <p id="status-line" class="text-xs text-slate-500 mt-1 flex items-center gap-1.5 flex-wrap" data-i18n="loading">Loading…</p>
       </div>
       <div class="flex items-center gap-1.5 shrink-0 pt-1">
         <button id="btn-ai" type="button" title="Copy for AI" data-i18n-title="titleAi" class="icon-btn">
@@ -111,23 +110,20 @@
 
           <div id="closed-summary" class="hidden w-full rounded-2xl border border-slate-200/90 bg-slate-50/70 p-5 text-center"></div>
 
-          <div id="detail-banner" class="w-full mt-4 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4 transition-all">
-            <div id="detail-content" class="text-center text-xs text-slate-500"></div>
+          <div id="detail-banner" class="hidden w-full mt-4 scroll-mt-3 rounded-2xl ring-2 ring-slate-900 bg-white p-3.5 sm:p-4 shadow-sm transition-all">
+            <div id="detail-content"></div>
           </div>
         </div>
 
         <div class="lg:col-span-6 flex flex-col">
           <div class="flex items-center justify-between mb-3 px-1 gap-2">
             <h2 id="legend-heading" class="text-sm font-bold uppercase tracking-wider text-slate-500"></h2>
-            <label class="flex items-center gap-1 text-xs text-slate-400">
-              <span class="sr-only sm:not-sr-only" data-i18n="sortLabel">Sort:</span>
-              <select id="sort-select" class="bg-transparent text-xs font-semibold text-slate-600 focus:outline-none cursor-pointer">
-                <option value="value" data-i18n="sortValue">value</option>
-                <option value="pnlPct" data-i18n="sortPnlPct">P/L %</option>
-                <option value="dailyPct" data-i18n="sortDaily">daily change</option>
-                <option value="name" data-i18n="sortName">A–Z</option>
-              </select>
-            </label>
+            <select id="sort-select" aria-label="Sort" class="bg-transparent text-xs font-semibold text-slate-600 focus:outline-none cursor-pointer">
+              <option value="value" data-i18n="sortValue">value</option>
+              <option value="pnlPct" data-i18n="sortPnlPct">P/L %</option>
+              <option value="dailyPct" data-i18n="sortDaily">daily change</option>
+              <option value="name" data-i18n="sortName">A–Z</option>
+            </select>
           </div>
 
           <div id="legend-list" class="rounded-2xl border border-slate-200/80 bg-white divide-y divide-slate-100 overflow-hidden"></div>
@@ -140,11 +136,6 @@
           </div>
 
           <div id="warnings" class="hidden mt-4"></div>
-
-          <div class="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 px-1">
-            <span id="footer-note" data-i18n="footerHint">Tap an item to view details.</span>
-            <span id="footer-total" class="font-semibold text-slate-600 tabular-nums"></span>
-          </div>
         </div>
       </div>
       </div>
@@ -153,30 +144,27 @@
       <div id="view-watchlist" class="hidden">
         <div class="px-4 sm:px-7 py-3.5 border-b border-slate-100 bg-slate-50/60 flex flex-wrap items-center justify-between gap-2.5">
           <div class="flex items-center gap-2.5">
-            <h2 id="watch-heading" class="text-sm font-bold uppercase tracking-wider text-slate-600">Watchlist (0)</h2>
+            <span id="watch-heading" class="text-xs font-semibold text-slate-500 tabular-nums"></span>
             <span id="watch-hits-pill" class="hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 tabular-nums"></span>
           </div>
           <div class="flex items-center gap-2.5 flex-wrap">
             <button id="watch-chip-prepost" type="button" class="chip hidden" aria-pressed="false"><span class="chip-dot"></span><span data-i18n="chipPrePost">Pre/Post</span></button>
-            <label class="flex items-center gap-1 text-xs text-slate-400">
-              <span class="sr-only sm:not-sr-only" data-i18n="sortLabel">Sort:</span>
-              <select id="watch-sort" class="bg-transparent text-xs font-semibold text-slate-600 focus:outline-none cursor-pointer">
-                <option value="status" data-i18n="watchSortStatus">status</option>
-                <option value="distance" data-i18n="watchSortDist">distance</option>
-                <option value="dailyPct" data-i18n="sortDaily">daily change</option>
-                <option value="name" data-i18n="sortName">A–Z</option>
-              </select>
-            </label>
+            <select id="watch-sort" aria-label="Sort" class="bg-transparent text-xs font-semibold text-slate-600 focus:outline-none cursor-pointer">
+              <option value="status" data-i18n="watchSortStatus">status</option>
+              <option value="distance" data-i18n="watchSortDist">distance</option>
+              <option value="dailyPct" data-i18n="sortDaily">daily change</option>
+              <option value="name" data-i18n="sortName">A–Z</option>
+            </select>
           </div>
         </div>
 
         <div class="p-4 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-          <div class="lg:col-span-5 lg:sticky lg:top-6">
-            <div id="watch-detail" class="w-full scroll-mt-3 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4 transition-all">
-              <div id="watch-detail-content" class="text-center text-xs text-slate-500"></div>
+          <div id="watch-detail-col" class="hidden lg:col-span-5 lg:sticky lg:top-6">
+            <div id="watch-detail" class="w-full scroll-mt-3 rounded-2xl ring-2 ring-slate-900 bg-white p-3.5 sm:p-4 shadow-sm transition-all">
+              <div id="watch-detail-content"></div>
             </div>
           </div>
-          <div class="lg:col-span-7 flex flex-col">
+          <div id="watch-list-col" class="lg:col-span-12 flex flex-col">
             <div id="watch-list" class="rounded-2xl border border-slate-200/80 bg-white divide-y divide-slate-100 overflow-hidden"></div>
           </div>
         </div>
@@ -256,13 +244,13 @@
     </div>
   </dialog>
 
-  <script src="js/i18n.js?v=1.4.0"></script>
-  <script src="js/format.js?v=1.4.0"></script>
-  <script src="js/demo.js?v=1.4.0"></script>
-  <script src="js/api.js?v=1.4.0"></script>
-  <script src="js/engine.js?v=1.4.0"></script>
-  <script src="js/chart.js?v=1.4.0"></script>
-  <script src="js/ai-export.js?v=1.4.0"></script>
-  <script src="js/app.js?v=1.4.0"></script>
+  <script src="js/i18n.js?v=1.4.1"></script>
+  <script src="js/format.js?v=1.4.1"></script>
+  <script src="js/demo.js?v=1.4.1"></script>
+  <script src="js/api.js?v=1.4.1"></script>
+  <script src="js/engine.js?v=1.4.1"></script>
+  <script src="js/chart.js?v=1.4.1"></script>
+  <script src="js/ai-export.js?v=1.4.1"></script>
+  <script src="js/app.js?v=1.4.1"></script>
 </body>
 </html>

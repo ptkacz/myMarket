@@ -121,7 +121,7 @@ Kolumny przygotowane pod przyszłe wersje: `Data rozliczenia` i `Kurs PLN (auto)
 - Przełącznik **`Portfolio` | `Watchlist`** nad główną kartą; gdy co najmniej jedna spółka na Watchliście osiągnie swój próg cenowy (`Kup ≤` lub `Sprzedaj ≥`), na zakładce `Watchlist` pojawia się zielona plakietka z liczbą trafień.
 
 ### Ekran portfela (`Portfolio`)
-- **Nagłówek:** nazwa portfela, status sesji + godzina kursów, przyciski **AI**, **Odśwież**, **Ustawienia**. Bez górnych kart KPI.
+- **Nagłówek:** ikona aplikacji + tytuł **`myMarket`**, skrócony status sesji z godziną (np. `● After-hours · 20:15`), przyciski **AI**, **Odśwież**, **Ustawienia**. Bez górnych kart KPI i bez zbędnych podpowiedzi/etykiet.
 - **Przełączniki w pasku narzędzi:**
   - Grupowanie: `By stock / By category` (`Wg spółek / Wg kategorii`),
   - Zakres pozycji: `Open / All / Closed` (`Otwarte / Wszystkie / Zamknięte`),
