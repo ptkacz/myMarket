@@ -82,7 +82,13 @@
       });
       slicesG.appendChild(path);
 
-      if (item.sharePct >= 6) {
+      const isCash = item.kind === 'cash';
+      const isCrypto = (item.kind === 'position' && item.position && item.position.isCrypto) ||
+        (item.kind === 'category' && item.positions && item.positions.length > 0 && item.positions.every(p => p.isCrypto));
+      const badgeSymbol = isCash ? '$' : (isCrypto ? '₿' : null);
+
+      const minShare = badgeSymbol ? 2.2 : 6;
+      if (item.sharePct >= minShare) {
         const r = o.style === 'donut' ? (OUTER_R + INNER_R) / 2 : OUTER_R * 0.64;
         const pos = polar(r, mid);
         const g = document.createElementNS(NS, 'g');
@@ -90,7 +96,15 @@
         g.dataset.id = item.id; g.dataset.dx = dx; g.dataset.dy = dy;
         const big = item.sharePct >= 14;
         const pctTxt = `${MM.fmt.num(item.sharePct, 1)}%`;
-        if (o.showTickers && item.sharePct >= 7 && item.label.length <= 6) {
+
+        if (badgeSymbol) {
+          if (item.sharePct >= 7) {
+            g.appendChild(text(pos.x, pos.y - 6, badgeSymbol, { fill: '#FFFFFF', 'font-size': big ? '15' : '13', 'font-weight': '700' }));
+            g.appendChild(text(pos.x, pos.y + 9, pctTxt, { fill: 'rgba(255,255,255,0.92)', 'font-size': big ? '11' : '10', 'font-weight': '600' }));
+          } else {
+            g.appendChild(text(pos.x, pos.y, badgeSymbol, { fill: '#FFFFFF', 'font-size': '12.5', 'font-weight': '700' }));
+          }
+        } else if (o.showTickers && item.sharePct >= 7 && item.label.length <= 6) {
           g.appendChild(text(pos.x, pos.y - 6, item.label, { fill: '#FFFFFF', 'font-size': big ? '13' : '11', 'font-weight': '700' }));
           g.appendChild(text(pos.x, pos.y + 9, pctTxt, { fill: 'rgba(255,255,255,0.92)', 'font-size': big ? '11' : '10', 'font-weight': '600' }));
         } else {

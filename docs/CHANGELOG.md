@@ -1,5 +1,8 @@
 # Changelog — myMarket
 
+## [1.3.8] — 2026-11-27
+- Symbole **`$`** (dla gotówki) i **`₿`** (dla krypto) na segmentach wykresu pierścieniowego — wyświetlane zarówno w trybie spółek, jak i kategorii, również dla wąskich segmentów (od `2.2%` udziału; powyżej `7%` z dopiskiem `%`).
+
 ## [1.3.7] — 2026-11-24
 - Zmiana nazwy animacji na `mm-spin-ccw` w [web/css/app.css](../web/css/app.css), ponieważ Tailwind CDN nadpisywał globalne `@keyframes spin` kierunkiem w prawo.
 - Precyzyjne przewijanie `window.scrollTo` do dokładnie `12 px` nad górną krawędzią karty szczegółów (niezawodne w Safari iOS i Chrome).
