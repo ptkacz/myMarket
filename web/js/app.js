@@ -2,7 +2,7 @@
 (function (MM) {
   'use strict';
 
-  const APP_VERSION = '1.3.8';
+  const APP_VERSION = '1.4.0';
   const KEY_PREFS = 'mm.prefs';
   const AUTO_REFRESH_MS = 60_000;
 
@@ -21,7 +21,8 @@
     includeCrypto: true,
     usePrePost: false,
     chartStyle: 'donut',   // 'donut' | 'pie'
-    sort: 'value'
+    sort: 'value',
+    watchSort: 'status'    // 'status' | 'distance' | 'dailyPct' | 'name'
   };
 
   function loadPrefs() {
@@ -41,13 +42,15 @@
         includeCrypto: state.includeCrypto,
         usePrePost: state.usePrePost,
         chartStyle: state.chartStyle,
-        sort: state.sort
+        sort: state.sort,
+        watchSort: state.watchSort
       }));
     } catch (e) { /* ignorujemy */ }
   }
 
   const state = {
     ...loadPrefs(),
+    view: 'portfolio',     // 'portfolio' | 'watchlist'
     payload: null,
     computed: null,
     viewData: null,
@@ -57,6 +60,8 @@
     lastFetchAt: 0,
     hoveredId: null,
     lockedId: null,
+    watchHoveredId: null,
+    watchLockedId: null,
     ai: { format: 'md', hideAmounts: false, withPrompt: true }
   };
 
@@ -67,6 +72,18 @@
     portfolioName: $('portfolio-name'),
     statusLine: $('status-line'),
     notice: $('notice'),
+    navPortfolio: $('nav-portfolio'),
+    navWatchlist: $('nav-watchlist'),
+    watchHitBadge: $('watch-hit-badge'),
+    viewPortfolio: $('view-portfolio'),
+    viewWatchlist: $('view-watchlist'),
+    watchHeading: $('watch-heading'),
+    watchHitsPill: $('watch-hits-pill'),
+    watchChipPrePost: $('watch-chip-prepost'),
+    watchSort: $('watch-sort'),
+    watchDetail: $('watch-detail'),
+    watchDetailContent: $('watch-detail-content'),
+    watchList: $('watch-list'),
     btnAi: $('btn-ai'),
     btnRefresh: $('btn-refresh'),
     refreshIcon: $('refresh-icon'),
@@ -210,14 +227,35 @@
     const sel = state.viewData.selectableItems;
     if (state.lockedId && !sel.some(i => i.id === state.lockedId)) state.lockedId = null;
     if (state.hoveredId && !sel.some(i => i.id === state.hoveredId)) state.hoveredId = null;
+    const wl = state.computed.watchlist || [];
+    if (state.watchLockedId && !wl.some(w => w.id === state.watchLockedId)) state.watchLockedId = null;
+    if (state.watchHoveredId && !wl.some(w => w.id === state.watchHoveredId)) state.watchHoveredId = null;
 
     renderHeader();
+    renderNav();
     renderNotice();
     renderControls();
     renderLeftPanel();
     renderLegend();
     renderWarnings();
     applyHighlight();
+    renderWatchlist();
+  }
+
+  function renderNav() {
+    const isPort = state.view === 'portfolio';
+    el.navPortfolio.setAttribute('aria-selected', isPort ? 'true' : 'false');
+    el.navWatchlist.setAttribute('aria-selected', !isPort ? 'true' : 'false');
+    el.viewPortfolio.classList.toggle('hidden', !isPort);
+    el.viewWatchlist.classList.toggle('hidden', isPort);
+
+    const hits = state.computed ? state.computed.watchlistHits : 0;
+    if (hits > 0) {
+      el.watchHitBadge.textContent = String(hits);
+      el.watchHitBadge.classList.remove('hidden');
+    } else {
+      el.watchHitBadge.classList.add('hidden');
+    }
   }
 
   function renderHeader() {
@@ -231,7 +269,7 @@
     if (r.market.fetchedAt && !state.isDemo) {
       parts.push(`<span>${f.esc(T('quotesAt'))} <strong class="font-medium text-slate-700">${f.time(r.market.fetchedAt)}</strong></span>`);
     }
-    if (state.usePrePost && r.anyExtended && state.scope !== 'closed') {
+    if (state.usePrePost && ((state.view === 'portfolio' && r.anyExtended && state.scope !== 'closed') || (state.view === 'watchlist' && r.watchlistAnyExtended))) {
       parts.push(`<span class="px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/80 text-[11px] font-semibold">${f.esc(T('withPrePost'))}</span>`);
     }
     if (r.market.source === 'googlefinance') {
@@ -794,6 +832,224 @@
   function hideTooltip() { el.tooltip.style.opacity = '0'; }
 
   // =========================================================================
+  // 4b. WATCHLIST
+  // =========================================================================
+  function watchStatusMeta(w) {
+    const f = F();
+    if (w.status === 'buy-hit') {
+      return {
+        dot: 'bg-emerald-500',
+        badge: `<span class="inline-flex items-center px-1.5 py-0 leading-[16px] rounded text-[10px] font-bold bg-emerald-600 text-white shrink-0">${f.esc(T('watchBadgeBuyHit'))}</span>`
+      };
+    }
+    if (w.status === 'sell-hit') {
+      return {
+        dot: 'bg-indigo-500',
+        badge: `<span class="inline-flex items-center px-1.5 py-0 leading-[16px] rounded text-[10px] font-bold bg-indigo-600 text-white shrink-0">${f.esc(T('watchBadgeSellHit'))}</span>`
+      };
+    }
+    if (w.status === 'near') {
+      return {
+        dot: 'bg-amber-400',
+        badge: `<span class="inline-flex items-center px-1.5 py-0 leading-[16px] rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200/80 shrink-0">${f.esc(T('watchBadgeNear'))}</span>`
+      };
+    }
+    return { dot: 'bg-slate-300', badge: '' };
+  }
+
+  function watchTargetLine(w, cur) {
+    const f = F();
+    if (w.primaryTarget === null) {
+      return `<span class="text-[11px] text-slate-400">${f.esc(T('watchNoTarget'))}</span>`;
+    }
+    const lbl = w.primarySide === 'buy' ? T('watchBuyTarget') : T('watchSellTarget');
+    const targetTxt = `${lbl} ${f.price(w.primaryTarget, cur)}`;
+    let distTxt = '';
+    if (w.primaryDistPct !== null) {
+      const cls = w.buyHit ? 'text-emerald-700 font-semibold'
+        : (w.sellHit ? 'text-indigo-700 font-semibold'
+          : (w.status === 'near' ? 'text-amber-700 font-semibold' : 'text-slate-500'));
+      distTxt = ` <span class="${cls}">(${f.signedPct(w.primaryDistPct, 1)})</span>`;
+    }
+    return `<span class="text-[11px] text-slate-500 tabular-nums">${f.esc(targetTxt)}${distTxt}</span>`;
+  }
+
+  function watchHeaderHtml(w, cur) {
+    const f = F();
+    const sm = watchStatusMeta(w);
+    const held = w.inPortfolio
+      ? `<span class="text-[10px] font-semibold px-1.5 py-0 leading-[16px] rounded bg-slate-100 text-slate-600 shrink-0">${f.esc(T('watchInPortfolio'))}</span>`
+      : '';
+    const extTag = w.extended && state.usePrePost
+      ? `<span class="text-[10px] font-semibold uppercase px-1 py-0 leading-[16px] rounded bg-amber-50 text-amber-700 shrink-0">${w.extended.type}</span>`
+      : '';
+    const daily = w.dailyPct !== null
+      ? `<span class="text-[11px] tabular-nums ${f.gainClass(w.dailyPct)}">${f.signedPct(w.dailyPct)}</span>`
+      : '';
+
+    return `
+      <div class="space-y-0.5">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="w-2.5 h-2.5 rounded-full shrink-0 ${sm.dot}"></span>
+            <span class="font-bold text-[13.5px] text-slate-900 truncate">${f.esc(w.ticker)}</span>
+            ${sm.badge}${held}${extTag}
+          </div>
+          <div class="flex items-baseline gap-1.5 shrink-0 tabular-nums">
+            <span class="font-bold text-[13.5px] text-slate-900">${f.price(w.price, cur)}</span>
+            ${daily}
+          </div>
+        </div>
+        <div class="flex items-center justify-between gap-2 pl-[18px]">
+          <span class="text-[11.5px] text-slate-500 truncate">${f.esc(w.name)}</span>
+          <div class="shrink-0">${watchTargetLine(w, cur)}</div>
+        </div>
+      </div>`;
+  }
+
+  function renderWatchlist() {
+    const r = state.computed;
+    if (!r) return;
+    const f = F();
+    const cur = r.base;
+    const sorted = MM.engine.sortWatchlist(r.watchlist || [], state.watchSort);
+
+    el.watchHeading.textContent = T('watchTitle', { n: sorted.length });
+    if (r.watchlistHits > 0) {
+      el.watchHitsPill.textContent = T('watchHitsSummary', { n: r.watchlistHits });
+      el.watchHitsPill.classList.remove('hidden');
+    } else {
+      el.watchHitsPill.classList.add('hidden');
+    }
+    el.watchChipPrePost.classList.toggle('hidden', !r.watchlistAnyExtended);
+    el.watchChipPrePost.setAttribute('aria-pressed', state.usePrePost ? 'true' : 'false');
+    el.watchSort.value = state.watchSort;
+
+    el.watchList.innerHTML = '';
+    if (!sorted.length) {
+      el.watchDetail.classList.add('hidden');
+      el.watchList.innerHTML = `
+        <div class="p-6 text-center space-y-1.5">
+          <div class="text-sm font-semibold text-slate-600">${f.esc(T('watchEmptyTitle'))}</div>
+          <div class="text-xs text-slate-400 max-w-md mx-auto">${f.esc(T('watchEmptyHint'))}</div>
+        </div>`;
+      return;
+    }
+
+    el.watchDetail.classList.remove('hidden');
+    sorted.forEach(w => {
+      const row = document.createElement('div');
+      row.className = 'watch-row hover:bg-slate-50/80 transition-colors cursor-pointer px-3 py-2 focus:outline-none focus-visible:bg-blue-50/50';
+      row.dataset.id = w.id;
+      row.dataset.status = w.status;
+      row.setAttribute('role', 'button');
+      row.setAttribute('tabindex', '0');
+      row.innerHTML = watchHeaderHtml(w, cur);
+
+      const toggleSelect = () => {
+        const locking = state.watchLockedId !== w.id;
+        state.watchLockedId = locking ? w.id : null;
+        applyWatchHighlight(sorted);
+        if (locking) {
+          const rect = el.watchDetail.getBoundingClientRect();
+          if (rect.top < 12 || rect.bottom > window.innerHeight - 12) {
+            window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - 12), behavior: 'smooth' });
+          }
+        }
+      };
+
+      row.addEventListener('mouseenter', () => { state.watchHoveredId = w.id; applyWatchHighlight(sorted); });
+      row.addEventListener('mouseleave', () => { state.watchHoveredId = null; applyWatchHighlight(sorted); });
+      row.addEventListener('click', e => { e.stopPropagation(); toggleSelect(); });
+      row.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelect(); }
+      });
+      el.watchList.appendChild(row);
+    });
+
+    applyWatchHighlight(sorted);
+  }
+
+  function applyWatchHighlight(sorted) {
+    const list = sorted || MM.engine.sortWatchlist((state.computed && state.computed.watchlist) || [], state.watchSort);
+    const activeId = state.watchHoveredId || state.watchLockedId;
+    const activeItem = activeId ? list.find(w => w.id === activeId) : null;
+
+    el.watchList.querySelectorAll('.watch-row').forEach(row => {
+      const isAct = row.dataset.id === activeId;
+      row.dataset.active = isAct ? 'true' : 'false';
+      row.dataset.dim = activeId && !isAct ? 'true' : 'false';
+    });
+
+    renderWatchDetail(activeItem, state.computed.base);
+  }
+
+  function renderWatchDetail(w, cur) {
+    const f = F();
+    if (!w) {
+      el.watchDetail.className = 'w-full scroll-mt-3 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4 transition-all';
+      el.watchDetailContent.className = 'text-center text-xs text-slate-500';
+      el.watchDetailContent.innerHTML = f.esc(T('watchHintSelect'));
+      return;
+    }
+
+    const ext = extendedInfo(w, cur);
+    const earn = !w.isCrypto ? earningsText(w.earnings) : '';
+    const earnCls = w.earnings && w.earnings.daysUntil <= 14 ? 'font-semibold text-blue-700' : 'font-medium text-slate-700';
+    const earnVal = earn ? `<strong class="${earnCls}">${f.esc(earn)}</strong>` : '<strong class="font-medium text-slate-400">—</strong>';
+    const extHtml = ext
+      ? `<span class="font-medium text-amber-700 tabular-nums truncate">${f.esc(ext)}</span>`
+      : `<span class="text-slate-500 truncate">${f.esc(T('chipPrePost'))}: <strong class="font-medium text-slate-400">—</strong></span>`;
+
+    const targetCell = (target, distUsd, distPct, isHit, hitCls) => {
+      if (target === null) return '<span class="font-semibold text-slate-400">—</span>';
+      const sub = distPct !== null
+        ? `<span class="block text-[10.5px] tabular-nums ${isHit ? hitCls + ' font-semibold' : 'text-slate-400'}">${f.signedMoney(distUsd, cur)} (${f.signedPct(distPct, 1)})</span>`
+        : '';
+      return `<span class="font-semibold tabular-nums ${isHit ? hitCls : 'text-slate-900'}">${f.price(target, cur)}</span>${sub}`;
+    };
+
+    const ringCls = w.status === 'buy-hit' ? 'ring-2 ring-emerald-600'
+      : (w.status === 'sell-hit' ? 'ring-2 ring-indigo-600' : 'ring-2 ring-slate-900');
+
+    el.watchDetail.className = `w-full scroll-mt-3 rounded-2xl ${ringCls} bg-white p-3.5 sm:p-4 shadow-sm transition-all`;
+    el.watchDetailContent.className = '';
+    el.watchDetailContent.innerHTML = `
+      ${watchHeaderHtml(w, cur)}
+      <div class="mt-2.5 pt-2.5 border-t border-slate-100 text-xs">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div>
+            <span class="text-slate-400 block">${f.esc(T('lblPrice'))}${w.priceSource === 'pre' ? ' (pre)' : w.priceSource === 'post' ? ' (post)' : ''}</span>
+            <span class="font-semibold tabular-nums">${f.price(w.price, cur)}</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block">${f.esc(T('watchBuyTarget'))}</span>
+            ${targetCell(w.buyTarget, w.buyDistUsd, w.buyDistPct, w.buyHit, 'text-emerald-600')}
+          </div>
+          <div>
+            <span class="text-slate-400 block">${f.esc(T('watchSellTarget'))}</span>
+            ${targetCell(w.sellTarget, w.sellDistUsd, w.sellDistPct, w.sellHit, 'text-indigo-600')}
+          </div>
+          <div>
+            <span class="text-slate-400 block">${f.esc(T('lblToday'))}</span>
+            <span class="font-semibold tabular-nums ${f.gainClass(w.dailyPct)}">${w.dailyPct !== null ? f.signedPct(w.dailyPct) : '—'}</span>
+          </div>
+        </div>
+        <div class="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500 space-y-1">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+            <span class="truncate">${f.esc(T('lblCategory'))}: <strong class="font-medium ${w.category ? 'text-slate-700' : 'text-slate-400'}">${f.esc(w.category || '—')}</strong></span>
+            <span class="truncate sm:text-right tabular-nums">${f.esc(T('lblEarnings'))}: ${earnVal}</span>
+          </div>
+          <div class="flex items-center justify-between">${extHtml}</div>
+        </div>
+        <div class="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+          <span>${f.esc(T('watchNote'))}: </span>
+          <span class="${w.note ? 'text-slate-700' : 'text-slate-400'}">${f.esc(w.note || '—')}</span>
+        </div>
+      </div>`;
+  }
+
+  // =========================================================================
   // 5. DIALOGI (USTAWIENIA I EKSPORT DLA AI)
   // =========================================================================
   function openSettings() {
@@ -865,7 +1121,24 @@
     recomputeAndRender();
   }
 
+  function setView(newView) {
+    state.view = newView;
+    state.lockedId = null;
+    state.hoveredId = null;
+    state.watchLockedId = null;
+    state.watchHoveredId = null;
+    renderHeader();
+    renderNav();
+    applyHighlight();
+    if (newView === 'watchlist') renderWatchlist();
+  }
+
   function bindEvents() {
+    el.navPortfolio.addEventListener('click', () => setView('portfolio'));
+    el.navWatchlist.addEventListener('click', () => setView('watchlist'));
+    el.watchChipPrePost.addEventListener('click', () => { state.usePrePost = !state.usePrePost; savePrefs(); recomputeAndRender(); });
+    el.watchSort.addEventListener('change', () => { state.watchSort = el.watchSort.value; savePrefs(); renderWatchlist(); });
+
     el.tabStocks.addEventListener('click', () => { state.mode = 'stocks'; state.lockedId = null; savePrefs(); recomputeAndRender(); });
     el.tabCategories.addEventListener('click', () => { state.mode = 'categories'; state.lockedId = null; savePrefs(); recomputeAndRender(); });
 
@@ -943,8 +1216,10 @@
 
     // Kliknięcie poza wykresem/listą zdejmuje zaznaczenie
     el.detailBanner.addEventListener('click', e => e.stopPropagation());
+    el.watchDetail.addEventListener('click', e => e.stopPropagation());
     document.addEventListener('click', () => {
       if (state.lockedId) { state.lockedId = null; applyHighlight(); }
+      if (state.watchLockedId) { state.watchLockedId = null; applyWatchHighlight(); }
     });
     [el.dlgSettings, el.dlgAi].forEach(d => d.addEventListener('click', e => {
       if (e.target === d) d.close();

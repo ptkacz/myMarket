@@ -223,23 +223,102 @@
       cashValue += c.amount;
     });
 
-    // --- 4. Sumy ---
+    // --- 4. Watchlist ---
+    const openTickers = new Set(positions.map(p => p.ticker));
+    const watchlist = (payload.watchlist || []).map(w => {
+      const meta = instr[w.ticker] || null;
+      const isCrypto = w.ticker.includes('-USD') || (meta ? meta.assetClass === 'CRYPTO' : false);
+      const symbol = w.ticker.includes('-') ? w.ticker : ((meta && meta.symbol) || (isCrypto ? `${w.ticker}-USD` : w.ticker));
+      const q = quotes[symbol] || quotes[w.ticker] || null;
+
+      let price = null, priceSource = 'none';
+      if (q && MM.fmt.isNum(q.regular)) {
+        price = q.regular;
+        priceSource = q.source === 'googlefinance' ? 'delayed' : 'regular';
+      }
+      let ext = null;
+      if (q && MM.fmt.isNum(q.post)) ext = { type: 'post', price: q.post, time: q.postTime };
+      else if (q && MM.fmt.isNum(q.pre)) ext = { type: 'pre', price: q.pre, time: q.preTime };
+      if (ext && MM.fmt.isNum(q.regular)) ext.changePct = (ext.price / q.regular - 1) * 100;
+      if (usePrePost && ext) { price = ext.price; priceSource = ext.type; }
+
+      const prevClose = q && MM.fmt.isNum(q.previousClose) ? q.previousClose : null;
+      const dailyPct = price !== null && prevClose ? (price / prevClose - 1) * 100 : null;
+
+      const buyTarget = MM.fmt.isNum(w.buyTarget) ? w.buyTarget : null;
+      const sellTarget = MM.fmt.isNum(w.sellTarget) ? w.sellTarget : null;
+      const buyHit = price !== null && buyTarget !== null && price <= buyTarget;
+      const sellHit = price !== null && sellTarget !== null && price >= sellTarget;
+      const buyDistUsd = price !== null && buyTarget !== null ? buyTarget - price : null;
+      const buyDistPct = price !== null && buyTarget !== null && price > 0 ? ((buyTarget - price) / price) * 100 : null;
+      const sellDistUsd = price !== null && sellTarget !== null ? sellTarget - price : null;
+      const sellDistPct = price !== null && sellTarget !== null && price > 0 ? ((sellTarget - price) / price) * 100 : null;
+
+      // Aktywny najbliższy cel (do sortowania i wyświetlania dystansu)
+      let primarySide = null, primaryTarget = null, primaryDistPct = null, primaryDistUsd = null;
+      if (buyHit) {
+        primarySide = 'buy'; primaryTarget = buyTarget; primaryDistPct = buyDistPct; primaryDistUsd = buyDistUsd;
+      } else if (sellHit) {
+        primarySide = 'sell'; primaryTarget = sellTarget; primaryDistPct = sellDistPct; primaryDistUsd = sellDistUsd;
+      } else if (buyTarget !== null && sellTarget !== null && buyDistPct !== null && sellDistPct !== null) {
+        if (Math.abs(buyDistPct) <= Math.abs(sellDistPct)) {
+          primarySide = 'buy'; primaryTarget = buyTarget; primaryDistPct = buyDistPct; primaryDistUsd = buyDistUsd;
+        } else {
+          primarySide = 'sell'; primaryTarget = sellTarget; primaryDistPct = sellDistPct; primaryDistUsd = sellDistUsd;
+        }
+      } else if (buyTarget !== null) {
+        primarySide = 'buy'; primaryTarget = buyTarget; primaryDistPct = buyDistPct; primaryDistUsd = buyDistUsd;
+      } else if (sellTarget !== null) {
+        primarySide = 'sell'; primaryTarget = sellTarget; primaryDistPct = sellDistPct; primaryDistUsd = sellDistUsd;
+      }
+
+      let status = 'watching'; // 'buy-hit' | 'sell-hit' | 'near' | 'watching'
+      let rank = 2;
+      if (buyHit) { status = 'buy-hit'; rank = 0; }
+      else if (sellHit) { status = 'sell-hit'; rank = 0; }
+      else if (primaryDistPct !== null && Math.abs(primaryDistPct) <= 5) { status = 'near'; rank = 1; }
+
+      const T = (k, v) => (MM.i18n ? MM.i18n.t(k, v) : k);
+      return {
+        id: 'WATCH:' + w.ticker,
+        ticker: w.ticker,
+        name: w.name || (meta && meta.name) || w.ticker,
+        category: w.category || (meta && meta.category) || (isCrypto ? T('cryptoCategory') : null),
+        isCrypto, symbol,
+        inPortfolio: openTickers.has(w.ticker),
+        price, priceSource,
+        regularPrice: q ? q.regular : null,
+        previousClose: prevClose,
+        extended: ext,
+        dailyPct,
+        buyTarget, sellTarget, buyHit, sellHit,
+        buyDistUsd, buyDistPct, sellDistUsd, sellDistPct,
+        primarySide, primaryTarget, primaryDistPct, primaryDistUsd,
+        status, rank,
+        note: w.note || '',
+        earnings: !isCrypto ? parseEarnings(earningsMap[symbol] || earningsMap[w.ticker]) : null
+      };
+    });
+    const watchlistHits = watchlist.filter(w => w.rank === 0).length;
+    const watchlistAnyExtended = watchlist.some(w => w.extended);
+
+    // --- 5. Sumy ---
     const sum = (arr, f) => arr.reduce((s, x) => s + (f(x) || 0), 0);
     const stocks = positions.filter(p => !p.isCrypto);
     const crypto = positions.filter(p => p.isCrypto);
     const closedCrypto = closed.filter(c => c.isCrypto);
 
-    // --- 5. Stan rynku / czas kursów ---
+    // --- 6. Stan rynku / czas kursów ---
     const stockQuotes = stocks.map(p => quotes[p.symbol]).filter(Boolean);
     const allQuotes = Object.values(quotes);
     const fetchedAt = allQuotes.reduce((m, q) => Math.max(m, q.fetchedAt || 0), 0) || null;
-    const marketState = stockQuotes.length ? stockQuotes[0].marketState : null;
+    const marketState = stockQuotes.length ? stockQuotes[0].marketState : (allQuotes[0] ? allQuotes[0].marketState : null);
     const anyExtended = positions.some(p => p.extended);
 
     return {
       base,
       portfolioName: (payload.portfolio && payload.portfolio.name) || 'Mój portfel',
-      positions, closed,
+      positions, closed, watchlist, watchlistHits, watchlistAnyExtended,
       cash: { value: cashValue, entries: cashEntries, color: CASH_COLOR },
       catColors,
       totals: {
@@ -437,5 +516,17 @@
     };
   }
 
-  MM.engine = { compute, view, PALETTE };
+  function sortWatchlist(list, sort) {
+    const loc = (MM.i18n && MM.i18n.getLang()) || 'en';
+    const dist = w => (w.rank === 0 ? -1000 : (w.primaryDistPct !== null ? Math.abs(w.primaryDistPct) : 1e9));
+    const by = {
+      status: (a, b) => (a.rank - b.rank) || (dist(a) - dist(b)) || a.ticker.localeCompare(b.ticker, loc),
+      distance: (a, b) => (dist(a) - dist(b)) || a.ticker.localeCompare(b.ticker, loc),
+      dailyPct: (a, b) => (b.dailyPct ?? -Infinity) - (a.dailyPct ?? -Infinity),
+      name: (a, b) => a.ticker.localeCompare(b.ticker, loc)
+    }[sort] || ((a, b) => (a.rank - b.rank) || (dist(a) - dist(b)));
+    return list.slice().sort(by);
+  }
+
+  MM.engine = { compute, view, sortWatchlist, PALETTE };
 })(window.MM = window.MM || {});

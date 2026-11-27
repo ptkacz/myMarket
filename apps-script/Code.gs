@@ -10,12 +10,13 @@
  */
 
 const API_VERSION = 1;
-const APP_VERSION = '1.3.1';
+const APP_VERSION = '1.4.0';
 
 const SHEETS = {
   START: 'Start',
   STOCKS: 'Akcje',
   CRYPTO: 'Krypto',
+  WATCHLIST: 'Watchlist',
   INSTRUMENTS: 'Instrumenty',
   CATEGORIES: 'Kategorie',
   CASH: 'Gotówka',
@@ -41,6 +42,13 @@ const CAT_FIELDS = { kategoria: 'name', kolor: 'color' };
 
 const CASH_HEADERS = ['Waluta', 'Saldo', 'Opis'];
 const CASH_FIELDS = { waluta: 'currency', saldo: 'amount', opis: 'label' };
+
+const WATCH_HEADERS = ['Ticker', 'Kup ≤', 'Sprzedaj ≥', 'Notatka'];
+const WATCH_FIELDS = {
+  ticker: 'ticker',
+  kup: 'buyTarget', kupno: 'buyTarget', cenadocelowa: 'buyTarget',
+  sprzedaj: 'sellTarget', sprzedaz: 'sellTarget', notatka: 'note'
+};
 
 const SETTINGS_HEADERS = ['Ustawienie', 'Wartość', 'Opis'];
 const SETTING_KEYS = {
@@ -91,8 +99,9 @@ function buildPortfolio_(opts) {
     .concat(readTransactions_(ss, SHEETS.CRYPTO, 'CRYPTO', tz, warnings));
   const cash = readCash_(ss, warnings);
   const categories = readCategories_(ss);
+  const watchlist = readWatchlist_(ss);
 
-  // Symbole do wyceny: tylko otwarte pozycje (ilość netto > 0)
+  // Symbole do wyceny: otwarte pozycje (ilość netto > 0) + Watchlist (z deduplikacją)
   const net = {};
   transactions.forEach(function (t) {
     net[t.ticker] = (net[t.ticker] || 0) + (t.type === 'BUY' ? t.quantity : -t.quantity);
@@ -111,9 +120,17 @@ function buildPortfolio_(opts) {
     if (cls === 'STOCK' && stockSymbols.indexOf(sym) === -1) stockSymbols.push(sym);
   });
 
+  watchlist.forEach(function (w) {
+    const instr = instrByTicker[w.ticker];
+    const isCrypto = (w.ticker.indexOf('-USD') !== -1) || (instr && instr.assetClass === 'CRYPTO');
+    const sym = w.ticker.indexOf('-') !== -1 ? w.ticker : ((instr && instr.symbol) || (isCrypto ? w.ticker + '-USD' : w.ticker));
+    if (symbols.indexOf(sym) === -1) symbols.push(sym);
+    if (!isCrypto && (!instr || instr.assetClass === 'STOCK') && stockSymbols.indexOf(sym) === -1) stockSymbols.push(sym);
+  });
+
   const quotes = symbols.length ? getQuotes_(symbols, !!(opts && opts.fresh)) : {};
   symbols.forEach(function (s) {
-    if (!quotes[s]) warnings.push({ level: 'warn', where: SHEETS.INSTRUMENTS, message: 'Brak kursu dla symbolu ' + s + ' — sprawdź kolumnę „Symbol notowań”.' });
+    if (!quotes[s]) warnings.push({ level: 'warn', where: SHEETS.INSTRUMENTS, message: 'Brak kursu dla symbolu ' + s + ' — sprawdź kolumnę „Symbol notowań” lub ticker.' });
   });
 
   const earnings = stockSymbols.length ? getEarnings_(stockSymbols, !!(opts && opts.fresh)) : {};
@@ -130,6 +147,7 @@ function buildPortfolio_(opts) {
     transactions: transactions,
     cash: cash,
     categories: categories,
+    watchlist: watchlist,
     quotes: quotes,
     earnings: earnings,
     warnings: warnings
@@ -288,6 +306,28 @@ function readCash_(ss, warnings) {
       currency: String(r.currency || 'USD').trim().toUpperCase(),
       amount: amount,
       label: String(r.label || '').trim()
+    });
+  });
+  return out;
+}
+
+function readWatchlist_(ss) {
+  const rows = readTable_(ss, SHEETS.WATCHLIST, WATCH_FIELDS);
+  if (!rows) return [];
+  const seen = {};
+  const out = [];
+  rows.forEach(function (r) {
+    const ticker = String(r.ticker || '').trim().toUpperCase();
+    if (!ticker || seen[ticker]) return;
+    seen[ticker] = true;
+    const buyTarget = num_(r.buyTarget);
+    const sellTarget = num_(r.sellTarget);
+    out.push({
+      row: r._row,
+      ticker: ticker,
+      buyTarget: buyTarget !== null && buyTarget > 0 ? buyTarget : null,
+      sellTarget: sellTarget !== null && sellTarget > 0 ? sellTarget : null,
+      note: String(r.note || '').trim()
     });
   });
   return out;
@@ -627,22 +667,30 @@ function regenerateToken() {
 function setupSpreadsheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const ui = SpreadsheetApp.getUi();
-  const addSample = ui.alert('myMarket — przygotowanie arkusza',
-    'Utworzę brakujące zakładki (Akcje, Krypto, Instrumenty, Kategorie, Gotówka, Ustawienia).\n\nCzy dodać przykładowe dane? (Możesz je potem usunąć/nadpisać.)',
-    ui.ButtonSet.YES_NO_CANCEL);
-  if (addSample === ui.Button.CANCEL || addSample === ui.Button.CLOSE) return;
-  const sample = addSample === ui.Button.YES;
+  const hasExisting = !!(ss.getSheetByName(SHEETS.STOCKS) || ss.getSheetByName(SHEETS.INSTRUMENTS));
+  let sample = false;
+  if (!hasExisting) {
+    const addSample = ui.alert('myMarket — przygotowanie arkusza',
+      'Utworzę zakładki (Akcje, Krypto, Watchlist, Instrumenty, Kategorie, Gotówka, Ustawienia).\n\nCzy dodać przykładowe dane? (Możesz je potem usunąć/nadpisać.)',
+      ui.ButtonSet.YES_NO_CANCEL);
+    if (addSample === ui.Button.CANCEL || addSample === ui.Button.CLOSE) return;
+    sample = addSample === ui.Button.YES;
+  }
 
+  const changes = [];
   setupStartSheet_(ss);
 
-  const stocks = ensureSheet_(ss, SHEETS.STOCKS, TX_HEADERS, '#2563EB');
-  const crypto = ensureSheet_(ss, SHEETS.CRYPTO, TX_HEADERS, '#F7931A');
-  const instr = ensureSheet_(ss, SHEETS.INSTRUMENTS, INSTR_HEADERS, '#10B981');
-  const cats = ensureSheet_(ss, SHEETS.CATEGORIES, CAT_HEADERS, '#7C3AED');
-  const cash = ensureSheet_(ss, SHEETS.CASH, CASH_HEADERS, '#64748B');
-  const settings = ensureSheet_(ss, SHEETS.SETTINGS, SETTINGS_HEADERS, '#0F172A');
+  const stocks = ensureSheet_(ss, SHEETS.STOCKS, TX_HEADERS, '#2563EB', changes);
+  const crypto = ensureSheet_(ss, SHEETS.CRYPTO, TX_HEADERS, '#F7931A', changes);
+  const watch = ensureSheet_(ss, SHEETS.WATCHLIST, WATCH_HEADERS, '#0EA5E9', changes);
+  removeUnusedColumns_(watch, ['nazwa', 'kategoria'], changes);
+  const instr = ensureSheet_(ss, SHEETS.INSTRUMENTS, INSTR_HEADERS, '#10B981', changes);
+  const cats = ensureSheet_(ss, SHEETS.CATEGORIES, CAT_HEADERS, '#7C3AED', changes);
+  const cash = ensureSheet_(ss, SHEETS.CASH, CASH_HEADERS, '#64748B', changes);
+  const settings = ensureSheet_(ss, SHEETS.SETTINGS, SETTINGS_HEADERS, '#0F172A', changes);
 
   [stocks, crypto].forEach(formatTxSheet_);
+  formatWatchlistSheet_(watch);
   formatInstrumentsSheet_(instr);
   cash.getRange('B2:B').setNumberFormat('#,##0.00');
 
@@ -665,21 +713,68 @@ function setupSpreadsheet() {
   });
 
   ensureToken_();
-  ss.setActiveSheet(ss.getSheetByName(SHEETS.START));
-  ui.alert('Gotowe!', 'Arkusz jest przygotowany. Kolejny krok: wdróż skrypt jako aplikację internetową (instrukcja w zakładce „Start”), a potem użyj menu myMarket → „Połącz z aplikacją”.', ui.ButtonSet.OK);
+  if (!hasExisting) {
+    ss.setActiveSheet(ss.getSheetByName(SHEETS.START));
+    ui.alert('Gotowe!', 'Arkusz jest przygotowany. Kolejny krok: wdróż skrypt jako aplikację internetową (instrukcja w zakładce „Start”), a potem użyj menu myMarket → „Połącz z aplikacją”.', ui.ButtonSet.OK);
+  } else {
+    const msg = changes.length
+      ? 'Zaktualizowano arkusz bez naruszania istniejących danych:\n• ' + changes.join('\n• ')
+      : 'Arkusz jest już aktualny — wszystkie zakładki i kolumny istnieją.';
+    ui.alert('Gotowe!', msg, ui.ButtonSet.OK);
+  }
 }
 
-function ensureSheet_(ss, name, headers, tabColor) {
+/** Selektywna migracja: tworzy brakującą zakładkę lub dopisuje brakujące kolumny nagłówka bez ruszania danych. */
+function ensureSheet_(ss, name, headers, tabColor, changes) {
   let sh = ss.getSheetByName(name);
-  if (!sh) sh = ss.insertSheet(name);
+  if (!sh) {
+    sh = ss.insertSheet(name);
+    if (changes) changes.push('Dodano zakładkę: ' + name);
+  }
   if (sh.getLastRow() === 0) {
     sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+  } else {
+    const lastCol = sh.getLastColumn();
+    const existing = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(normKey_);
+    const missing = headers.filter(function (h) { return existing.indexOf(normKey_(h)) === -1; });
+    if (missing.length) {
+      sh.getRange(1, lastCol + 1, 1, missing.length).setValues([missing]);
+      if (changes) changes.push(name + ' — dodano kolumny: ' + missing.join(', '));
+    }
   }
   sh.getRange(1, 1, 1, sh.getLastColumn() || headers.length)
     .setFontWeight('bold').setBackground('#F1F5F9').setFontColor('#0F172A');
   sh.setFrozenRows(1);
   if (tabColor) sh.setTabColor(tabColor);
   return sh;
+}
+
+/** Selektywne usuwanie wyłącznie wycofanych kolumn (od prawej do lewej, bez naruszania pozostałych danych). */
+function removeUnusedColumns_(sh, obsoleteKeys, changes) {
+  if (sh.getLastRow() === 0) return;
+  const lastCol = sh.getLastColumn();
+  if (lastCol === 0) return;
+  const headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+  const removed = [];
+  for (let c = headers.length; c >= 1; c--) {
+    if (obsoleteKeys.indexOf(normKey_(headers[c - 1])) !== -1) {
+      removed.push(String(headers[c - 1]));
+      sh.deleteColumn(c);
+    }
+  }
+  if (removed.length && changes) {
+    changes.push(sh.getName() + ' — usunięto zbędne kolumny: ' + removed.reverse().join(', '));
+  }
+}
+
+function formatWatchlistSheet_(sh) {
+  sh.getRange('B2:C').setNumberFormat('#,##0.00');
+  const instr = sh.getParent().getSheetByName(SHEETS.INSTRUMENTS);
+  if (instr) {
+    sh.getRange('A2:A').setDataValidation(
+      SpreadsheetApp.newDataValidation().requireValueInRange(instr.getRange('A2:A'), true).setAllowInvalid(true).build());
+  }
+  [100, 105, 110, 360].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
 }
 
 function formatTxSheet_(sh) {
@@ -707,12 +802,17 @@ function formatInstrumentsSheet_(sh) {
   sh.getRange('F2:F').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['USD', 'PLN', 'EUR'], true).build());
   sh.getRange('H2:H200').insertCheckboxes();
   [90, 220, 220, 110, 130, 80, 100, 80].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
-  // Ponowna walidacja tickerów w zakładkach transakcji (Instrumenty mogły powstać później)
+  // Ponowna walidacja tickerów w zakładkach transakcji i Watchlist (Instrumenty mogły powstać później)
   [SHEETS.STOCKS, SHEETS.CRYPTO].forEach(function (n) {
     const t = sh.getParent().getSheetByName(n);
     if (t) t.getRange('D2:D').setDataValidation(
       SpreadsheetApp.newDataValidation().requireValueInRange(sh.getRange('A2:A'), true).setAllowInvalid(true).build());
   });
+  const watch = sh.getParent().getSheetByName(SHEETS.WATCHLIST);
+  if (watch) {
+    watch.getRange('A2:A').setDataValidation(
+      SpreadsheetApp.newDataValidation().requireValueInRange(sh.getRange('A2:A'), true).setAllowInvalid(true).build());
+  }
 }
 
 function setupStartSheet_(ss) {
@@ -725,6 +825,7 @@ function setupStartSheet_(ss) {
     ['ZAKŁADKI'],
     ['• Akcje — transakcje akcji/ETF (KUPNO / SPRZEDAŻ). Jedna transakcja = jeden wiersz.'],
     ['• Krypto — transakcje kryptowalut (np. BTC). Te same kolumny co „Akcje”, ilości ułamkowe dozwolone.'],
+    ['• Watchlist — obserwowane spółki z progami cenowymi (Kup ≤ / Sprzedaj ≥) i notatką.'],
     ['• Instrumenty — słownik: nazwa, KATEGORIA (steruje widokiem „wg kategorii”), klasa aktywa, symbol notowań, kolor.'],
     ['• Kategorie — opcjonalnie kolor dla każdej kategorii.'],
     ['• Gotówka — aktualne saldo wolnych środków (wpisywane ręcznie).'],
@@ -742,7 +843,7 @@ function setupStartSheet_(ss) {
   ];
   sh.getRange(1, 1, lines.length, 1).setValues(lines);
   sh.getRange('A1').setFontSize(16).setFontWeight('bold');
-  ['A3', 'A11'].forEach(function (a) { sh.getRange(a).setFontWeight('bold').setFontColor('#2563EB'); });
+  ['A3', 'A12'].forEach(function (a) { sh.getRange(a).setFontWeight('bold').setFontColor('#2563EB'); });
   sh.setColumnWidth(1, 900);
   sh.setTabColor('#94A3B8');
 }

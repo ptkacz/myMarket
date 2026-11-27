@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Wersja** | 0.4 (zaktualizowany po wdrożeniu v1.3.0) |
-| **Data** | 23.11.2026 |
-| **Status** | v1.3.0 zaimplementowana |
+| **Wersja** | 0.5 (zaktualizowany po wdrożeniu v1.4.0) |
+| **Data** | 27.11.2026 |
+| **Status** | v1.4.0 zaimplementowana |
 | **Bazuje na** | Prototyp „Struktura portfela akcyjnego — 20.11.2026” (HTML + SVG + Tailwind) |
 
 ---
@@ -25,6 +25,7 @@ Lekkie, czytelne narzędzie webowe (otwierane głównie na iPhonie z ekranu gł�
 - **Minimalna liczba przełączników na głównym ekranie** — rzadko używane opcje (język, styl koła, połączenie) są schowane w Ustawieniach.
 - **Mobile-first** (iPhone Safari + PWA), pełny układ dwukolumnowy na desktopie.
 - **Arkusz = baza danych.** Aplikacja w v1 jest tylko do odczytu; wszystkie zmiany robi się w arkuszu.
+- **Selektywne, niedestrukcyjne aktualizacje arkusza** *(stała reguła)* — `myMarket → 1. Przygotuj arkusz` nigdy nie kasuje ani nie nadpisuje wpisanych danych użytkownika w aktywnych zakładkach; dokłada wyłącznie brakujące zakładki lub brakujące kolumny nagłówka (usunięcie zakładki/kolumny dopuszczalne wyłącznie, gdy funkcja zostaje trwale wycofana).
 - **Zero zależności od AI w działaniu aplikacji** — każdy może korzystać za darmo.
 - **Szybkie iteracje, czysty podział warstw** — wymienne warstwy (źródło danych, dostawca kursów, moduł obliczeń, i18n).
 
@@ -89,6 +90,7 @@ Jeden broker (bez kolumny konta w v1). **Akcje i krypto są rozdzielone na dwie 
 | `Start` | Krótka instrukcja obsługi i wdrożenia |
 | `Akcje` | Transakcje akcji i ETF (`Data transakcji`, `Data rozliczenia`, `Typ`, `Ticker`, `Ilość`, `Cena`, `Waluta`, `Prowizja`, `Kurs PLN (auto)`, `Notatka`) |
 | `Krypto` | Transakcje kryptowalut (np. `BTC`) — te same kolumny co `Akcje`, wsparcie ilości ułamkowych |
+| `Watchlist` | Obserwowane spółki i krypto z progami cenowymi: `Ticker` (lista rozwijana z `Instrumenty`), `Kup ≤`, `Sprzedaj ≥`, `Notatka` (nazwa i kategoria zaciągane automatycznie z `Instrumenty`) |
 | `Instrumenty` | Słownik: `Ticker`, `Nazwa`, `Kategoria` (steruje widokiem „By category / Wg kategorii”), `Klasa aktywa` (`Akcja`/`ETF`/`Krypto`), `Symbol notowań`, `Waluta`, `Kolor`, `Aktywny` |
 | `Kategorie` | Opcjonalnie przypisanie kolorów do kategorii |
 | `Gotówka` | Ręcznie wpisywane saldo (`Waluta`, `Saldo`, `Opis`) |
@@ -113,9 +115,12 @@ Kolumny przygotowane pod przyszłe wersje: `Data rozliczenia` i `Kurs PLN (auto)
 
 ---
 
-## 6. Zakres funkcjonalny — stan aktualny (`v1.3.0`)
+## 6. Zakres funkcjonalny — stan aktualny (`v1.4.0`)
 
-### Ekran główny
+### Nawigacja główna (`Portfolio` | `Watchlist`)
+- Przełącznik **`Portfolio` | `Watchlist`** nad główną kartą; gdy co najmniej jedna spółka na Watchliście osiągnie swój próg cenowy (`Kup ≤` lub `Sprzedaj ≥`), na zakładce `Watchlist` pojawia się zielona plakietka z liczbą trafień.
+
+### Ekran portfela (`Portfolio`)
 - **Nagłówek:** nazwa portfela, status sesji + godzina kursów, przyciski **AI**, **Odśwież**, **Ustawienia**. Bez górnych kart KPI.
 - **Przełączniki w pasku narzędzi:**
   - Grupowanie: `By stock / By category` (`Wg spółek / Wg kategorii`),
@@ -130,6 +135,15 @@ Kolumny przygotowane pod przyszłe wersje: `Data rozliczenia` i `Kurs PLN (auto)
 - **Lista pozycji / kategorii:** kompaktowe 2-liniowe wiersze we wspólnej białej ramce z cienkimi liniami podziału (ok. 2× więcej pozycji widocznych bez przewijania); sortowanie (`value` / `P/L USD`, `P/L %`, `daily change`, `A–Z`); w trybie `All` pod otwartymi pozycjami pojawia się oddzielona sekcja zamkniętych pozycji.
 - **Uwagi z arkusza:** zwijana lista ostrzeżeń walidacji.
 - **Tryb demo**, natychmiastowe ładowanie z lokalnego cache + auto-odświeżanie co 60 s w trakcie sesji.
+
+### Watchlist (`Watchlist`)
+- Czyta zakładkę `Watchlist` z Arkusza Google (wspólne pobieranie kursów z Pre/Post oraz dat `Next earnings` z deduplikacją symboli; bez danych demo i bez maili).
+- **3 stany podświetlenia** (kompaktowe 2-liniowe wiersze we wspólnej białej ramce, sortowane wg statusu / dystansu / zmiany dziennej / A–Z):
+  - **Cel osiągnięty** (`BUY TARGET` zielony gdy kurs ≤ `Kup ≤`, `SELL TARGET` indygo gdy kurs ≥ `Sprzedaj ≥`) — wypychane na samą górę listy.
+  - **Blisko celu** (`NEAR` bursztynowy, gdy dystans ≤ 5% od progu).
+  - **Obserwowana** — biały wiersz z bieżącym kursem, zmianą dzienną %, ceną docelową i dystansem %.
+- Po kliknięciu wiersza karta szczegółów pokazuje kurs, Pre/Post, oba progi z dystansem `$` i `%`, kategorię, `Next earnings` oraz notatkę/tezę.
+- Uwzględniana w eksporcie **AI** (`## Watchlist` w Markdown i `watchlist` w JSON).
 
 ### Język i formatowanie (`web/js/i18n.js`, `web/js/format.js`)
 - **Domyślny język: angielski (`EN`)**, przełącznik **`English | Polski`** w Ustawieniach (zapisywany w `localStorage`).
@@ -154,9 +168,10 @@ Kolumny przygotowane pod przyszłe wersje: `Data rozliczenia` i `Kurs PLN (auto)
 | **v1.0.3** | Ujednolicenie karty szczegółów pod wykresem (spółki + kategorie), usunięcie dublowania na liście, delikatne przewijanie na mobile. | Gotowe |
 | **v1.1.0** | Tryby `Open / All / Closed`, częściowe sprzedaże uwzględniane w wyniku otwartej pozycji, widok całkowicie zamkniętych pozycji i kategorii, zamknięte pozycje w eksporcie AI. | Gotowe |
 | **v1.2.0** | Przełącznik języka `EN / PL` w Ustawieniach (EN domyślny), lokalne formatowanie liczb i dat, dwujęzyczny eksport AI. | Gotowe |
-| **v1.3 — Najbliższe wyniki (Earnings)** | Pobieranie najbliższej daty publikacji wyników finansowych (Yahoo quote/crumb + fallback Nasdaq, cache 6h) i wyświetlanie jej w karcie szczegółów spółki, tooltipie oraz w eksporcie AI. | Gotowe |
-| **v1.4 — PLN i podatki** | Automatyczne pobieranie kursu średniego **NBP (tabela A)** z ostatniego dnia roboczego przed datą rozliczenia do kolumny `Kurs PLN (auto)`; przełącznik waluty **USD / PLN** (z bieżącym kursem `USDPLN=X`); wynik w PLN z różnicami kursowymi; opcja metody kosztu **FIFO** (pod PIT-38). | Następny krok |
-| **v1.5 — Rynki spoza USA i wielowalutowość** | Obsługa spółek w PLN (GPW, np. `CDR.WA`), EUR (np. `SAP.DE`), GBP itp. — przeliczanie walut w locie, gotówka wielowalutowa. | Planowane |
+| **v1.3 — Najbliższe wyniki (Earnings) i dopracowanie UI** | Daty wyników finansowych (Yahoo quote/crumb, cache 6h), symbol `$`, poszerzony środek koła z dwuliniowym `TODAY`, kompaktowa 2-liniowa lista, stały układ karty szczegółów bez skakania, symbole `$` / `₿` na segmentach wykresu. | Gotowe |
+| **v1.4 — Watchlist** | Zakładka `Watchlist` w arkuszu (selektywna migracja bez ruszania danych), przełącznik `Portfolio | Watchlist` z licznikiem trafień, progi `Kup ≤` / `Sprzedaj ≥`, podświetlenie trafień i blisko celu (≤ 5%), karta szczegółów z notatką i earnings, sekcja Watchlist w eksporcie AI. | Gotowe |
+| **v1.5 — PLN i podatki** | Automatyczne pobieranie kursu średniego **NBP (tabela A)** z ostatniego dnia roboczego przed datą rozliczenia do kolumny `Kurs PLN (auto)`; przełącznik waluty **USD / PLN** (z bieżącym kursem `USDPLN=X`); wynik w PLN z różnicami kursowymi; opcja metody kosztu **FIFO** (pod PIT-38). | Następny krok |
+| **v1.6 — Rynki spoza USA i wielowalutowość** | Obsługa spółek w PLN (GPW, np. `CDR.WA`), EUR (np. `SAP.DE`), GBP itp. — przeliczanie walut w locie, gotówka wielowalutowa. | Planowane |
 | **v2.x — Rozwój** | Wykres wartości portfela w czasie (dzienne snapshoty do zakładki `Historia`), dywidendy, porównanie z benchmarkiem (S&P 500 / Nasdaq), docelowe wagi i rebalancing, tryb ciemny, wiele kont/brokerów, opcjonalne logowanie Google OAuth. | Pomysły |
 
 ---
@@ -169,3 +184,4 @@ Kolumny przygotowane pod przyszłe wersje: `Data rozliczenia` i `Kurs PLN (auto)
 | 0.2 | 22.11.2026 | Zatwierdzony zakres v1.0: GitHub Pages, osobne zakładki `Akcje`/`Krypto`, domyślnie wyłączone pre/post, jeden broker, eksport AI, architektura zero-build. |
 | 0.3 | 23.11.2026 | Aktualizacja po v1.0.3–v1.2.0: ujednolicona karta szczegółów pod wykresem, tryby `Open / All / Closed` z częściowymi sprzedażami, dwujęzyczność `EN / PL` (EN domyślny) w Ustawieniach, plan najbliższych wyników (v1.3). |
 | 0.4 | 23.11.2026 | Aktualizacja po v1.2.1–v1.3.0: pionowy układ `Open / Closed` w środku koła, najbliższe daty wyników finansowych (Yahoo + fallback Nasdaq, cache 6h) w karcie szczegółów, tooltipie i eksporcie AI. |
+| 0.5 | 27.11.2026 | Aktualizacja po v1.3.2–v1.4.0: symbol `$`, poszerzony środek koła, kompaktowa lista, jednolita karta szczegółów, symbole `$`/`₿` na kole, stała reguła selektywnej migracji arkusza oraz pełna funkcjonalność `Watchlist`. |

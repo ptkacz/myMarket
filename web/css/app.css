@@ -95,6 +95,13 @@ body {
 }
 .legend-row[data-dim="true"] { opacity: .55; }
 
+/* Watchlist — akcenty statusu */
+.watch-row[data-status="buy-hit"] { background: rgb(236 253 245 / 0.72); box-shadow: inset 3px 0 0 rgb(16 185 129); }
+.watch-row[data-status="sell-hit"] { background: rgb(238 242 255 / 0.72); box-shadow: inset 3px 0 0 rgb(79 70 229); }
+.watch-row[data-status="near"] { background: rgb(255 251 235 / 0.72); box-shadow: inset 3px 0 0 rgb(245 158 11); }
+.watch-row[data-active="true"] { box-shadow: inset 3px 0 0 rgb(15 23 42); background: rgb(241 245 249 / 0.9); }
+.watch-row[data-dim="true"] { opacity: .58; }
+
 @keyframes mm-spin-ccw { to { transform: rotate(-360deg); } }
 .spinning { animation: mm-spin-ccw .9s linear infinite; }
 

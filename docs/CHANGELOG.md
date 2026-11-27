@@ -1,5 +1,10 @@
 # Changelog — myMarket
 
+## [1.4.0] — 2026-11-27
+- **Watchlist z progami cenowymi (`Kup ≤` / `Sprzedaj ≥`):**
+  - Backend ([apps-script/Code.gs](../apps-script/Code.gs)): nowa, uproszczona zakładka `Watchlist` (`Ticker` z listą rozwijaną z `Instrumenty`, `Kup ≤`, `Sprzedaj ≥`, `Notatka` — nazwa i kategoria zaciągane ze słownika `Instrumenty`) dodawana selektywnie przez `1. Przygotuj arkusz` (automatycznie usuwa wycofane kolumny `Nazwa` i `Kategoria` bez naruszania pozostałych danych); wspólne pobieranie kursów (z Pre/Post) i dat wyników z deduplikacją symboli.
+  - Frontend: przełącznik `Portfolio | Watchlist` z zielonym licznikiem trafień, kompaktowa lista 2-liniowa z podświetleniem trafionych (`BUY TARGET` / `SELL TARGET`) i bliskich (≤ 5%, `NEAR`) celów, karta szczegółów z dystansem `$` / `%`, datą wyników i notatką, wsparcie EN/PL oraz sekcja `## Watchlist` w eksporcie AI.
+
 ## [1.3.8] — 2026-11-27
 - Symbole **`$`** (dla gotówki) i **`₿`** (dla krypto) na segmentach wykresu pierścieniowego — wyświetlane zarówno w trybie spółek, jak i kategorii, również dla wąskich segmentów (od `2.2%` udziału; powyżej `7%` z dopiskiem `%`).
 

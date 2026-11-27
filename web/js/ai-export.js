@@ -109,6 +109,28 @@
     L.push('|---|---|---|');
     s.categories.forEach(c => L.push(`| ${c.name} | ${f.pct(s.share(c.value))} | ${f.signedPct(c.totalCost > 0 ? (c.pnl / c.totalCost) * 100 : null)} |`));
     if (result.cash.value > 0) L.push(`| ${T('cashLabel')} | ${f.pct(s.share(result.cash.value))} | — |`);
+    if (result.watchlist && result.watchlist.length) {
+      L.push('');
+      L.push(T('watchAiSec'));
+      const wHead = [T('aiColTicker'), T('aiColName'), T('aiColPrice'), T('watchAiColBuy'), T('watchAiColSell'), T('watchAiColStatus'), T('watchAiColNote')];
+      L.push(`| ${wHead.join(' | ')} |`);
+      L.push(`|${wHead.map(() => '---').join('|')}|`);
+      const stLabel = w => ({
+        'buy-hit': T('watchBadgeBuyHit'),
+        'sell-hit': T('watchBadgeSellHit'),
+        near: T('watchBadgeNear'),
+        watching: T('watchStatusWatching')
+      }[w.status] || T('watchStatusWatching'));
+      MM.engine.sortWatchlist(result.watchlist, 'status').forEach(w => {
+        const row = [
+          w.ticker, w.name, f.price(w.price, cur),
+          w.buyTarget !== null ? f.price(w.buyTarget, cur) : '—',
+          w.sellTarget !== null ? f.price(w.sellTarget, cur) : '—',
+          stLabel(w), w.note || '—'
+        ];
+        L.push(`| ${row.map(x => String(x).replace(/\|/g, '/')).join(' | ')} |`);
+      });
+    }
     L.push('');
     L.push(T('aiFootnote'));
     if (opts.withPrompt) {
@@ -155,6 +177,13 @@
         pnlPct: r2(c.pnlPct),
         closedAt: c.lastDate || null
       })),
+      watchlist: result.watchlist && result.watchlist.length ? MM.engine.sortWatchlist(result.watchlist, 'status').map(w => ({
+        ticker: w.ticker, name: w.name, category: w.category,
+        price: r2(w.price), buyTarget: r2(w.buyTarget), sellTarget: r2(w.sellTarget),
+        status: w.status, distPct: r2(w.primaryDistPct),
+        nextEarnings: w.earnings ? w.earnings.date : undefined,
+        note: w.note || undefined
+      })) : undefined,
       cashSharePct: r2(s.share(result.cash.value))
     }, null, 2);
   }

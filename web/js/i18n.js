@@ -40,6 +40,9 @@
       connectSheet: 'Connect sheet',
 
       // Toolbar
+      navPortfolio: 'Portfolio',
+      navWatchlist: 'Watchlist',
+      ariaMainView: 'Main view',
       ariaGrouping: 'Grouping mode',
       ariaScope: 'Position scope',
       tabStocks: 'By stock',
@@ -193,7 +196,33 @@
       aiPromptText: 'You are an experienced investment analyst. Based on the portfolio above, help me make a decision. Pay attention to diversification, risk concentration, and valuation. My question:',
       classStock: 'Stock', classEtf: 'ETF', classCrypto: 'Crypto',
       srcRegular: 'regular', srcPre: 'pre-market', srcPost: 'after-hours', srcDelayed: 'delayed', srcNone: 'no quote',
-      demoPortfolioName: 'Demo portfolio'
+      demoPortfolioName: 'Demo portfolio',
+
+      // Watchlist
+      watchTitle: 'Watchlist ({n})',
+      watchHitsSummary: '{n} target hit',
+      watchSortStatus: 'status',
+      watchSortDist: 'distance',
+      watchEmptyTitle: 'Your watchlist is empty.',
+      watchEmptyHint: 'Run myMarket → 1. Przygotuj arkusz in Google Sheets to add the "Watchlist" tab, then add tickers with Buy ≤ / Sell ≥ target prices.',
+      watchHintSelect: 'Tap a ticker in the list to view targets, earnings, and notes.',
+      watchBuyTarget: 'Buy ≤',
+      watchSellTarget: 'Sell ≥',
+      watchBadgeBuyHit: 'BUY TARGET',
+      watchBadgeSellHit: 'SELL TARGET',
+      watchBadgeNear: 'NEAR',
+      watchInPortfolio: 'Held',
+      watchNoTarget: 'No target',
+      watchToTarget: '{pct} to target',
+      watchBelowTarget: '{pct} below',
+      watchAboveTarget: '{pct} above',
+      watchNote: 'Note',
+      watchAiSec: '## Watchlist',
+      watchAiColBuy: 'Buy ≤',
+      watchAiColSell: 'Sell ≥',
+      watchAiColStatus: 'Status',
+      watchAiColNote: 'Note',
+      watchStatusWatching: 'Watching'
     },
 
     pl: {
@@ -231,6 +260,9 @@
       connectSheet: 'Połącz arkusz',
 
       // Toolbar
+      navPortfolio: 'Portfel',
+      navWatchlist: 'Watchlist',
+      ariaMainView: 'Widok główny',
       ariaGrouping: 'Tryb grupowania',
       ariaScope: 'Zakres pozycji',
       tabStocks: 'Wg spółek',
@@ -384,7 +416,33 @@
       aiPromptText: 'Jesteś doświadczonym analitykiem inwestycyjnym. Na podstawie powyższego portfela pomóż mi podjąć decyzję. Zwróć uwagę na dywersyfikację, koncentrację ryzyka i wycenę. Moje pytanie:',
       classStock: 'Akcja', classEtf: 'ETF', classCrypto: 'Krypto',
       srcRegular: 'sesja', srcPre: 'pre-market', srcPost: 'after-hours', srcDelayed: 'opóźniony', srcNone: 'brak kursu',
-      demoPortfolioName: 'Portfel demo'
+      demoPortfolioName: 'Portfel demo',
+
+      // Watchlist
+      watchTitle: 'Watchlist ({n})',
+      watchHitsSummary: 'Cel osiągnięty: {n}',
+      watchSortStatus: 'status',
+      watchSortDist: 'dystans',
+      watchEmptyTitle: 'Twoja lista obserwacyjna jest pusta.',
+      watchEmptyHint: 'Uruchom w Arkuszu Google myMarket → 1. Przygotuj arkusz, aby dodać zakładkę „Watchlist”, a następnie wpisz tickery i progi Kup ≤ / Sprzedaj ≥.',
+      watchHintSelect: 'Dotknij spółki na liście, aby zobaczyć progi cenowe, wyniki i notatkę.',
+      watchBuyTarget: 'Kup ≤',
+      watchSellTarget: 'Sprzedaj ≥',
+      watchBadgeBuyHit: 'CEL KUPNA',
+      watchBadgeSellHit: 'CEL SPRZEDAŻY',
+      watchBadgeNear: 'BLISKO',
+      watchInPortfolio: 'W portfelu',
+      watchNoTarget: 'Brak progu',
+      watchToTarget: '{pct} do celu',
+      watchBelowTarget: '{pct} poniżej',
+      watchAboveTarget: '{pct} powyżej',
+      watchNote: 'Notatka',
+      watchAiSec: '## Watchlist',
+      watchAiColBuy: 'Kup ≤',
+      watchAiColSell: 'Sprzedaj ≥',
+      watchAiColStatus: 'Status',
+      watchAiColNote: 'Notatka',
+      watchStatusWatching: 'Obserwowana'
     }
   };
 

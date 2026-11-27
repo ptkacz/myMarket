@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/app.css?v=1.3.8" />
+  <link rel="stylesheet" href="css/app.css?v=1.4.0" />
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen antialiased selection:bg-blue-100 selection:text-blue-900">
 
@@ -51,9 +51,20 @@
     <!-- Notices (demo / error) -->
     <div id="notice" class="hidden mb-4"></div>
 
+    <!-- Main view switcher (Portfolio / Watchlist) -->
+    <nav role="tablist" aria-label="Main view" class="inline-flex bg-slate-200/70 p-1 rounded-xl mb-4">
+      <button id="nav-portfolio" role="tab" type="button" class="seg-btn" aria-selected="true" data-i18n="navPortfolio">Portfolio</button>
+      <button id="nav-watchlist" role="tab" type="button" class="seg-btn inline-flex items-center gap-1.5" aria-selected="false">
+        <span data-i18n="navWatchlist">Watchlist</span>
+        <span id="watch-hit-badge" class="hidden inline-flex items-center gap-1 px-1.5 py-0 rounded-full text-[10.5px] font-bold bg-emerald-600 text-white leading-[16px] tabular-nums"></span>
+      </button>
+    </nav>
+
     <!-- Main card -->
     <main class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
 
+      <!-- Portfolio view -->
+      <div id="view-portfolio">
       <!-- Toolbar -->
       <div class="px-4 sm:px-7 py-3.5 border-b border-slate-100 bg-slate-50/60 flex flex-col gap-3">
         <div class="flex flex-wrap items-center justify-between gap-2.5">
@@ -136,6 +147,40 @@
           </div>
         </div>
       </div>
+      </div>
+
+      <!-- Watchlist view -->
+      <div id="view-watchlist" class="hidden">
+        <div class="px-4 sm:px-7 py-3.5 border-b border-slate-100 bg-slate-50/60 flex flex-wrap items-center justify-between gap-2.5">
+          <div class="flex items-center gap-2.5">
+            <h2 id="watch-heading" class="text-sm font-bold uppercase tracking-wider text-slate-600">Watchlist (0)</h2>
+            <span id="watch-hits-pill" class="hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 tabular-nums"></span>
+          </div>
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <button id="watch-chip-prepost" type="button" class="chip hidden" aria-pressed="false"><span class="chip-dot"></span><span data-i18n="chipPrePost">Pre/Post</span></button>
+            <label class="flex items-center gap-1 text-xs text-slate-400">
+              <span class="sr-only sm:not-sr-only" data-i18n="sortLabel">Sort:</span>
+              <select id="watch-sort" class="bg-transparent text-xs font-semibold text-slate-600 focus:outline-none cursor-pointer">
+                <option value="status" data-i18n="watchSortStatus">status</option>
+                <option value="distance" data-i18n="watchSortDist">distance</option>
+                <option value="dailyPct" data-i18n="sortDaily">daily change</option>
+                <option value="name" data-i18n="sortName">A–Z</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="p-4 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+          <div class="lg:col-span-5 lg:sticky lg:top-6">
+            <div id="watch-detail" class="w-full scroll-mt-3 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4 transition-all">
+              <div id="watch-detail-content" class="text-center text-xs text-slate-500"></div>
+            </div>
+          </div>
+          <div class="lg:col-span-7 flex flex-col">
+            <div id="watch-list" class="rounded-2xl border border-slate-200/80 bg-white divide-y divide-slate-100 overflow-hidden"></div>
+          </div>
+        </div>
+      </div>
     </main>
 
     <p class="text-center text-[11px] text-slate-400 mt-6">myMarket v<span id="app-version"></span> · <span data-i18n="footerApp">data from your Google Sheet · quotes: Yahoo Finance / Google Finance</span></p>
@@ -211,13 +256,13 @@
     </div>
   </dialog>
 
-  <script src="js/i18n.js?v=1.3.8"></script>
-  <script src="js/format.js?v=1.3.8"></script>
-  <script src="js/demo.js?v=1.3.8"></script>
-  <script src="js/api.js?v=1.3.8"></script>
-  <script src="js/engine.js?v=1.3.8"></script>
-  <script src="js/chart.js?v=1.3.8"></script>
-  <script src="js/ai-export.js?v=1.3.8"></script>
-  <script src="js/app.js?v=1.3.8"></script>
+  <script src="js/i18n.js?v=1.4.0"></script>
+  <script src="js/format.js?v=1.4.0"></script>
+  <script src="js/demo.js?v=1.4.0"></script>
+  <script src="js/api.js?v=1.4.0"></script>
+  <script src="js/engine.js?v=1.4.0"></script>
+  <script src="js/chart.js?v=1.4.0"></script>
+  <script src="js/ai-export.js?v=1.4.0"></script>
+  <script src="js/app.js?v=1.4.0"></script>
 </body>
 </html>
