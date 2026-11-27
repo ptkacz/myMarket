@@ -87,7 +87,7 @@
         (item.kind === 'category' && item.positions && item.positions.length > 0 && item.positions.every(p => p.isCrypto));
       const badgeSymbol = isCash ? '$' : (isCrypto ? '₿' : null);
 
-      const minShare = badgeSymbol ? 2.2 : 6;
+      const minShare = badgeSymbol ? 1.2 : 6;
       if (item.sharePct >= minShare) {
         const r = o.style === 'donut' ? (OUTER_R + INNER_R) / 2 : OUTER_R * 0.64;
         const pos = polar(r, mid);
@@ -98,11 +98,14 @@
         const pctTxt = `${MM.fmt.num(item.sharePct, 1)}%`;
 
         if (badgeSymbol) {
-          if (item.sharePct >= 7) {
-            g.appendChild(text(pos.x, pos.y - 6, badgeSymbol, { fill: '#FFFFFF', 'font-size': big ? '15' : '13', 'font-weight': '700' }));
-            g.appendChild(text(pos.x, pos.y + 9, pctTxt, { fill: 'rgba(255,255,255,0.92)', 'font-size': big ? '11' : '10', 'font-weight': '600' }));
+          if (item.sharePct >= 4.5) {
+            const symSize = big ? '15' : (item.sharePct >= 7 ? '13' : '12');
+            const pctSize = big ? '11' : (item.sharePct >= 7 ? '10' : '9');
+            g.appendChild(text(pos.x, pos.y - 6, badgeSymbol, { fill: '#FFFFFF', 'font-size': symSize, 'font-weight': '700' }));
+            g.appendChild(text(pos.x, pos.y + 8, pctTxt, { fill: 'rgba(255,255,255,0.92)', 'font-size': pctSize, 'font-weight': '600' }));
           } else {
-            g.appendChild(text(pos.x, pos.y, badgeSymbol, { fill: '#FFFFFF', 'font-size': '12.5', 'font-weight': '700' }));
+            const symSize = item.sharePct >= 2.5 ? '12.5' : '10.5';
+            g.appendChild(text(pos.x, pos.y, badgeSymbol, { fill: '#FFFFFF', 'font-size': symSize, 'font-weight': '700' }));
           }
         } else if (o.showTickers && item.sharePct >= 7 && item.label.length <= 6) {
           g.appendChild(text(pos.x, pos.y - 6, item.label, { fill: '#FFFFFF', 'font-size': big ? '13' : '11', 'font-weight': '700' }));

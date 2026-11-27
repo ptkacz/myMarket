@@ -1,5 +1,8 @@
 # Changelog — myMarket
 
+## [1.4.3] — 2026-11-27
+- Obniżone progi widoczności symboli `$` i `₿` na wykresie w [web/js/chart.js](../web/js/chart.js): sam symbol wyświetla się już od `1.2%` udziału (z dopasowanym rozmiarem czcionki), a symbol z procentem od `4.5%`.
+
 ## [1.4.2] — 2026-11-27
 - Naprawa znikającej karty szczegółów przy kliknięciu bezpośrednio w wiersz listy (Portfel i Watchlist) — karta otwiera się teraz wyłącznie po kliknięciu/tapnięciu (nie przesuwa listy na `mouseenter`).
 - Przewidywalne zamykanie karty szczegółów: ponowne kliknięcie wybranej pozycji (na kole lub na liście) albo kliknięcie dowolnego pustego tła (w tym środka koła) zamyka kartę; przełączniki w pasku narzędzi nie zamykają otwartej karty.
