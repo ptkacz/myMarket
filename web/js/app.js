@@ -2,7 +2,7 @@
 (function (MM) {
   'use strict';
 
-  const APP_VERSION = '1.5.0';
+  const APP_VERSION = '1.5.1';
   const KEY_PREFS = 'mm.prefs';
   const AUTO_REFRESH_MS = 60_000;
 
@@ -364,13 +364,11 @@
     const s = state.viewData.summary;
 
     if (!s.closedCount) {
-      el.closedSummary.innerHTML = `
-        <div class="py-6">
-          <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">${f.esc(T('closedPositions'))}</div>
-          <div class="text-sm text-slate-500 mt-2">${f.esc(T('closedEmpty'))}</div>
-        </div>`;
+      el.closedSummary.classList.add('hidden');
+      el.closedSummary.innerHTML = '';
       return;
     }
+    el.closedSummary.classList.remove('hidden');
 
     const balance = T('recordBalance', { w: s.closedWins, l: s.closedLosses });
     el.closedSummary.innerHTML = `
