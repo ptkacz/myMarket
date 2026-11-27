@@ -2,7 +2,7 @@
 (function (MM) {
   'use strict';
 
-  const APP_VERSION = '1.4.1';
+  const APP_VERSION = '1.4.2';
   const KEY_PREFS = 'mm.prefs';
   const AUTO_REFRESH_MS = 60_000;
 
@@ -402,7 +402,9 @@
       onMove: e => positionTooltip(e),
       onLeave: () => { state.hoveredId = null; applyHighlight(); hideTooltip(); },
       onSelect: item => {
-        state.lockedId = state.lockedId === item.id ? null : item.id;
+        const locking = state.lockedId !== item.id;
+        state.lockedId = locking ? item.id : null;
+        state.hoveredId = null;
         applyHighlight();
       }
     });
@@ -486,6 +488,8 @@
     }
   }
 
+  const canHover = () => window.matchMedia && window.matchMedia('(hover: hover)').matches;
+
   function createRowElement(item, cur) {
     const row = document.createElement('div');
     row.className = 'legend-row hover:bg-slate-50/80 transition-colors cursor-pointer px-3 py-2 focus:outline-none focus-visible:bg-blue-50/50';
@@ -497,12 +501,13 @@
     const toggleSelect = () => {
       const locking = state.lockedId !== item.id;
       state.lockedId = locking ? item.id : null;
+      state.hoveredId = null;
       applyHighlight();
       if (locking) scrollToDetailIfHidden();
     };
 
-    row.addEventListener('mouseenter', () => { state.hoveredId = item.id; applyHighlight(); });
-    row.addEventListener('mouseleave', () => { state.hoveredId = null; applyHighlight(); });
+    row.addEventListener('mouseenter', () => { if (canHover()) { state.hoveredId = item.id; applyHighlight(); } });
+    row.addEventListener('mouseleave', () => { if (state.hoveredId === item.id) { state.hoveredId = null; applyHighlight(); } });
     row.addEventListener('click', e => { e.stopPropagation(); toggleSelect(); });
     row.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelect(); }
@@ -656,7 +661,8 @@
       }
     }
 
-    renderDetailBanner(activeItem, cur);
+    const lockedItem = state.lockedId ? state.viewData.selectableItems.find(i => i.id === state.lockedId) : null;
+    renderDetailBanner(lockedItem, cur);
   }
 
   function extendedInfo(p, cur) {
@@ -946,8 +952,6 @@
         }
       };
 
-      row.addEventListener('mouseenter', () => { state.watchHoveredId = w.id; applyWatchHighlight(sorted); });
-      row.addEventListener('mouseleave', () => { state.watchHoveredId = null; applyWatchHighlight(sorted); });
       row.addEventListener('click', e => { e.stopPropagation(); toggleSelect(); });
       row.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelect(); }
@@ -960,7 +964,7 @@
 
   function applyWatchHighlight(sorted) {
     const list = sorted || MM.engine.sortWatchlist((state.computed && state.computed.watchlist) || [], state.watchSort);
-    const activeId = state.watchHoveredId || state.watchLockedId;
+    const activeId = state.watchLockedId;
     const activeItem = activeId ? list.find(w => w.id === activeId) : null;
 
     el.watchList.querySelectorAll('.watch-row').forEach(row => {
@@ -1204,10 +1208,9 @@
       navigator.share({ title: T('aiShareTitle', { name: state.computed.portfolioName }), text: el.aiText.value }).catch(() => {});
     });
 
-    // Kliknięcie poza wykresem/listą zdejmuje zaznaczenie
-    el.detailBanner.addEventListener('click', e => e.stopPropagation());
-    el.watchDetail.addEventListener('click', e => e.stopPropagation());
-    document.addEventListener('click', () => {
+    // Kliknięcie w puste tło (w tym środek koła) zdejmuje zaznaczenie; kontrolki UI nie zamykają karty
+    document.addEventListener('click', e => {
+      if (e.target.closest('button, select, input, a, dialog, #detail-banner, #watch-detail, .legend-row, .watch-row, .pie-slice')) return;
       if (state.lockedId) { state.lockedId = null; applyHighlight(); }
       if (state.watchLockedId) { state.watchLockedId = null; applyWatchHighlight(); }
     });

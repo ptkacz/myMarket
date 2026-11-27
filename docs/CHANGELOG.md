@@ -1,5 +1,9 @@
 # Changelog — myMarket
 
+## [1.4.2] — 2026-11-27
+- Naprawa znikającej karty szczegółów przy kliknięciu bezpośrednio w wiersz listy (Portfel i Watchlist) — karta otwiera się teraz wyłącznie po kliknięciu/tapnięciu (nie przesuwa listy na `mouseenter`).
+- Przewidywalne zamykanie karty szczegółów: ponowne kliknięcie wybranej pozycji (na kole lub na liście) albo kliknięcie dowolnego pustego tła (w tym środka koła) zamyka kartę; przełączniki w pasku narzędzi nie zamykają otwartej karty.
+
 ## [1.4.1] — 2026-11-27
 - Odchudzenie i oczyszczenie UI:
   - Nagłówek zastąpiony ikoną aplikacji + tytułem **`myMarket`** (usunięta niebieska kapsułka i napis `Portfolio structure`), skrócony wiersz statusu (`● After-hours · 20:15`, bez zdublowanej kapsułki `with Pre/Post`).
